@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "904687523024",
+    "project_id": "gokantin-c4858",
+    "storage_bucket": "gokantin-c4858.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:904687523024:android:7a3d8a79915cd491153ad5",
+        "android_client_info": {
+          "package_name": "com.example.go_kantin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "904687523024-kpsio152nb5hbah9jigf4bt25vm158dt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.go_kantin",
+            "certificate_hash": "df0c20b6de6347ead76c9788b23613aff5102134"
+          }
+        },
+        {
+          "client_id": "904687523024-0eebbsq93nojdadd88uk4e8mq4rulnr5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfc-ugk5qDUze4K5biWPZYArHhvmpHOBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "904687523024-0eebbsq93nojdadd88uk4e8mq4rulnr5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "904687523024-66no0vt06cag316j0rj82merj7qbsaef.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.goKantin"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
