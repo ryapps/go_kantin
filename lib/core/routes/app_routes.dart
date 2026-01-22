@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kantin_app/core/di/injection_container.dart';
 import 'package:kantin_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/register_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/role_selector_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/splash_screen.dart';
+import 'package:kantin_app/features/checkout/presentation/bloc/checkout_bloc.dart';
+import 'package:kantin_app/features/checkout/presentation/screens/checkout_screen.dart';
+import 'package:kantin_app/features/home/presentation/screens/siswa_home_screen.dart';
+import 'package:kantin_app/features/transaksi/presentation/bloc/order_tracking_bloc.dart';
+import 'package:kantin_app/features/transaksi/presentation/bloc/transaksi_history_bloc.dart';
+import 'package:kantin_app/features/transaksi/presentation/screens/order_tracking_screen.dart';
+import 'package:kantin_app/features/transaksi/presentation/screens/transaksi_history_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -30,11 +39,14 @@ class AppRouter {
 
       // Placeholder routes (will be implemented in next phases)
       GoRoute(
-        path: '/menu',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Menu',
-          message: 'Menu screen akan diimplementasikan di fase berikutnya',
-          icon: Icons.restaurant_menu,
+        path: '/siswa-home',
+        builder: (context, state) => const SiswaHomeScreen(),
+      ),
+      GoRoute(
+        path: '/checkout',
+        builder: (context, state) => BlocProvider(
+          create: (context) => sl<CheckoutBloc>(),
+          child: const CheckoutScreen(),
         ),
       ),
       GoRoute(
@@ -69,6 +81,23 @@ class AppRouter {
           title: 'Lengkapi Data Stan',
           message: 'Stan profile akan diimplementasikan di fase berikutnya',
           icon: Icons.store,
+        ),
+      ),
+      GoRoute(
+        path: '/order-tracking/:id',
+        builder: (context, state) {
+          final transaksiId = state.pathParameters['id'] ?? '';
+          return BlocProvider(
+            create: (context) => sl<OrderTrackingBloc>(),
+            child: OrderTrackingScreen(transaksiId: transaksiId),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/transaksi-history',
+        builder: (context, state) => BlocProvider(
+          create: (context) => sl<TransaksiHistoryBloc>(),
+          child: const TransaksiHistoryScreen(),
         ),
       ),
     ],

@@ -4,7 +4,7 @@ class Menu extends Equatable {
   final String id;
   final String stanId; // ref to Stan
   final String stanName; // denormalized
-  final String namaMakanan;
+  final String namaItem;
   final double harga;
   final String jenis; // 'makanan' | 'minuman'
   final String foto; // image URL
@@ -16,7 +16,7 @@ class Menu extends Equatable {
     required this.id,
     required this.stanId,
     required this.stanName,
-    required this.namaMakanan,
+    required this.namaItem,
     required this.harga,
     required this.jenis,
     required this.foto,
@@ -33,7 +33,7 @@ class Menu extends Equatable {
     id,
     stanId,
     stanName,
-    namaMakanan,
+    namaItem,
     harga,
     jenis,
     foto,

@@ -86,16 +86,6 @@ class _RoleSelectorScreenState extends State<RoleSelectorScreen> {
                     ? () => _handleContinue(context)
                     : null,
               ),
-              const SizedBox(height: 16),
-
-              // Back Button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => context.pop(),
-                  child: const Text('Kembali'),
-                ),
-              ),
             ],
           ),
         ),

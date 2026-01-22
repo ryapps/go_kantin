@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/utils/constants.dart';
 import '../models/menu_model.dart';
 
 /// Remote datasource for menu operations
@@ -40,10 +42,7 @@ abstract class MenuRemoteDatasource {
   });
 
   /// Toggle menu availability
-  Future<void> toggleAvailability(
-    String menuId,
-    bool isAvailable,
-  );
+  Future<void> toggleAvailability(String menuId, bool isAvailable);
 
   /// Delete menu item
   Future<void> deleteMenu(String menuId);
@@ -59,7 +58,7 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
   final FirebaseFirestore _firestore;
 
   MenuRemoteDatasourceImpl({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+    : _firestore = firestore;
 
   @override
   Future<MenuModel> createMenu({
@@ -71,8 +70,27 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
     required String deskripsi,
   }) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final stanDoc = await _firestore
+          .collection(AppConstants.stanCollection)
+          .doc(stanId)
+          .get();
+      final stanName = stanDoc.data()?['namaStan'] ?? '';
+
+      final collection = _firestore.collection(AppConstants.menuCollection);
+      final docRef = await collection.add({
+        'stanId': stanId,
+        'stanName': stanName,
+        'namaItem': namaMakanan,
+        'harga': harga,
+        'jenis': jenis,
+        'foto': fotoPath,
+        'deskripsi': deskripsi,
+        'isAvailable': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      final snapshot = await docRef.get();
+      return MenuModel.fromFirestore(snapshot);
     } catch (e) {
       throw ServerException('Gagal membuat menu: ${e.toString()}');
     }
@@ -81,8 +99,11 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
   @override
   Future<List<MenuModel>> getAllMenu() async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final snapshot = await _firestore
+          .collection(AppConstants.menuCollection)
+          .orderBy('createdAt', descending: true)
+          .get();
+      return snapshot.docs.map(MenuModel.fromFirestore).toList();
     } catch (e) {
       throw ServerException('Gagal mengambil semua menu: ${e.toString()}');
     }
@@ -91,18 +112,30 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
   @override
   Future<List<MenuModel>> getMenuByStanId(String stanId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final snapshot = await _firestore
+          .collection(AppConstants.menuCollection)
+          .where('stanId', isEqualTo: stanId)
+          .orderBy('createdAt', descending: true)
+          .get();
+      return snapshot.docs.map(MenuModel.fromFirestore).toList();
     } catch (e) {
-      throw ServerException('Gagal mengambil menu berdasarkan stan: ${e.toString()}');
+      throw ServerException(
+        'Gagal mengambil menu berdasarkan stan: ${e.toString()}',
+      );
     }
   }
 
   @override
   Future<MenuModel> getMenuById(String menuId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final snapshot = await _firestore
+          .collection(AppConstants.menuCollection)
+          .doc(menuId)
+          .get();
+      if (!snapshot.exists) {
+        throw ServerException('Menu tidak ditemukan');
+      }
+      return MenuModel.fromFirestore(snapshot);
     } catch (e) {
       throw ServerException('Gagal mengambil menu: ${e.toString()}');
     }
@@ -111,8 +144,17 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
   @override
   Future<List<MenuModel>> searchMenu(String query) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final keyword = query.trim();
+      if (keyword.isEmpty) {
+        return getAllMenu();
+      }
+
+      final snapshot = await _firestore
+          .collection(AppConstants.menuCollection)
+          .where('namaItem', isGreaterThanOrEqualTo: keyword)
+          .where('namaItem', isLessThan: '${keyword}\uf8ff')
+          .get();
+      return snapshot.docs.map(MenuModel.fromFirestore).toList();
     } catch (e) {
       throw ServerException('Gagal mencari menu: ${e.toString()}');
     }
@@ -121,8 +163,12 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
   @override
   Future<List<MenuModel>> filterMenuByType(String jenis) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final snapshot = await _firestore
+          .collection(AppConstants.menuCollection)
+          .where('jenis', isEqualTo: jenis)
+          .orderBy('createdAt', descending: true)
+          .get();
+      return snapshot.docs.map(MenuModel.fromFirestore).toList();
     } catch (e) {
       throw ServerException('Gagal memfilter menu: ${e.toString()}');
     }
@@ -138,31 +184,54 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
     String? deskripsi,
   }) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final updateData = <String, dynamic>{};
+      if (namaMakanan != null) updateData['namaItem'] = namaMakanan;
+      if (harga != null) updateData['harga'] = harga;
+      if (jenis != null) updateData['jenis'] = jenis;
+      if (fotoPath != null) updateData['foto'] = fotoPath;
+      if (deskripsi != null) updateData['deskripsi'] = deskripsi;
+
+      if (updateData.isNotEmpty) {
+        await _firestore
+            .collection(AppConstants.menuCollection)
+            .doc(menuId)
+            .update(updateData);
+      }
+
+      final snapshot = await _firestore
+          .collection(AppConstants.menuCollection)
+          .doc(menuId)
+          .get();
+      if (!snapshot.exists) {
+        throw ServerException('Menu tidak ditemukan');
+      }
+      return MenuModel.fromFirestore(snapshot);
     } catch (e) {
       throw ServerException('Gagal mengupdate menu: ${e.toString()}');
     }
   }
 
   @override
-  Future<void> toggleAvailability(
-    String menuId,
-    bool isAvailable,
-  ) async {
+  Future<void> toggleAvailability(String menuId, bool isAvailable) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      await _firestore
+          .collection(AppConstants.menuCollection)
+          .doc(menuId)
+          .update({'isAvailable': isAvailable});
     } catch (e) {
-      throw ServerException('Gagal mengganti ketersediaan menu: ${e.toString()}');
+      throw ServerException(
+        'Gagal mengganti ketersediaan menu: ${e.toString()}',
+      );
     }
   }
 
   @override
   Future<void> deleteMenu(String menuId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      await _firestore
+          .collection(AppConstants.menuCollection)
+          .doc(menuId)
+          .delete();
     } catch (e) {
       throw ServerException('Gagal menghapus menu: ${e.toString()}');
     }
@@ -170,13 +239,20 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
 
   @override
   Stream<List<MenuModel>> watchAllMenu() {
-    // Implementation will go here
-    throw UnimplementedError();
+    return _firestore
+        .collection(AppConstants.menuCollection)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(MenuModel.fromFirestore).toList());
   }
 
   @override
   Stream<List<MenuModel>> watchMenuByStanId(String stanId) {
-    // Implementation will go here
-    throw UnimplementedError();
+    return _firestore
+        .collection(AppConstants.menuCollection)
+        .where('stanId', isEqualTo: stanId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(MenuModel.fromFirestore).toList());
   }
 }

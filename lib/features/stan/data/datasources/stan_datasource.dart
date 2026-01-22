@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/utils/constants.dart';
 import '../models/stan_model.dart';
 
 /// Remote datasource for stan operations
@@ -46,7 +48,7 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
   final FirebaseFirestore _firestore;
 
   StanRemoteDatasourceImpl({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+    : _firestore = firestore;
 
   @override
   Future<StanModel> createStan({
@@ -56,8 +58,25 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
     required String telp,
   }) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final collection = _firestore.collection(AppConstants.stanCollection);
+      final docRef = await collection.add({
+        'userId': userId,
+        'namaStan': namaStan,
+        'namaPemilik': namaPemilik,
+        'telp': telp,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'description': '',
+        'imageUrl': '',
+        'rating': 0.0,
+        'reviewCount': 0,
+        'openTime': '',
+        'closeTime': '',
+        'categories': <String>[],
+        'location': '',
+      });
+      final snapshot = await docRef.get();
+      return StanModel.fromFirestore(snapshot);
     } catch (e) {
       throw ServerException('Gagal membuat stan: ${e.toString()}');
     }
@@ -66,8 +85,12 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
   @override
   Future<List<StanModel>> getAllStans() async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final snapshot = await _firestore
+          .collection(AppConstants.stanCollection)
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .get();
+      return snapshot.docs.map(StanModel.fromFirestore).toList();
     } catch (e) {
       throw ServerException('Gagal mengambil semua stan: ${e.toString()}');
     }
@@ -76,8 +99,14 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
   @override
   Future<StanModel> getStanById(String stanId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final snapshot = await _firestore
+          .collection(AppConstants.stanCollection)
+          .doc(stanId)
+          .get();
+      if (!snapshot.exists) {
+        throw ServerException('Stan tidak ditemukan');
+      }
+      return StanModel.fromFirestore(snapshot);
     } catch (e) {
       throw ServerException('Gagal mengambil stan: ${e.toString()}');
     }
@@ -86,10 +115,21 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
   @override
   Future<StanModel> getStanByUserId(String userId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final snapshot = await _firestore
+          .collection(AppConstants.stanCollection)
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        throw ServerException('Stan tidak ditemukan untuk user ini');
+      }
+
+      return StanModel.fromFirestore(snapshot.docs.first);
     } catch (e) {
-      throw ServerException('Gagal mengambil stan berdasarkan user: ${e.toString()}');
+      throw ServerException(
+        'Gagal mengambil stan berdasarkan user: ${e.toString()}',
+      );
     }
   }
 
@@ -101,8 +141,26 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
     String? telp,
   }) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      final updateData = <String, dynamic>{};
+      if (namaStan != null) updateData['namaStan'] = namaStan;
+      if (namaPemilik != null) updateData['namaPemilik'] = namaPemilik;
+      if (telp != null) updateData['telp'] = telp;
+
+      if (updateData.isNotEmpty) {
+        await _firestore
+            .collection(AppConstants.stanCollection)
+            .doc(stanId)
+            .update(updateData);
+      }
+
+      final snapshot = await _firestore
+          .collection(AppConstants.stanCollection)
+          .doc(stanId)
+          .get();
+      if (!snapshot.exists) {
+        throw ServerException('Stan tidak ditemukan');
+      }
+      return StanModel.fromFirestore(snapshot);
     } catch (e) {
       throw ServerException('Gagal mengupdate stan: ${e.toString()}');
     }
@@ -111,8 +169,10 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
   @override
   Future<void> activateStan(String stanId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      await _firestore
+          .collection(AppConstants.stanCollection)
+          .doc(stanId)
+          .update({'isActive': true});
     } catch (e) {
       throw ServerException('Gagal mengaktifkan stan: ${e.toString()}');
     }
@@ -121,8 +181,10 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
   @override
   Future<void> deactivateStan(String stanId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      await _firestore
+          .collection(AppConstants.stanCollection)
+          .doc(stanId)
+          .update({'isActive': false});
     } catch (e) {
       throw ServerException('Gagal menonaktifkan stan: ${e.toString()}');
     }
@@ -131,8 +193,10 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
   @override
   Future<void> deleteStan(String stanId) async {
     try {
-      // Implementation will go here
-      throw UnimplementedError();
+      await _firestore
+          .collection(AppConstants.stanCollection)
+          .doc(stanId)
+          .delete();
     } catch (e) {
       throw ServerException('Gagal menghapus stan: ${e.toString()}');
     }
@@ -140,7 +204,11 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
 
   @override
   Stream<List<StanModel>> watchAllStans() {
-    // Implementation will go here
-    throw UnimplementedError();
+    return _firestore
+        .collection(AppConstants.stanCollection)
+        .where('isActive', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(StanModel.fromFirestore).toList());
   }
 }

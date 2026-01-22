@@ -1,21 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-class MenuDiskon extends Equatable {
-  final String id;
-  final String menuId; // ref to Menu
-  final String diskonId; // ref to Diskon
-
-  const MenuDiskon({
-    required this.id,
-    required this.menuId,
-    required this.diskonId,
-  });
-
-  @override
-  List<Object?> get props => [id, menuId, diskonId];
-}
-
-class Diskon extends Equatable {
+class Diskon extends Equatable{
   final String id;
   final String namaDiskon;
   final double persentaseDiskon; // 0-100

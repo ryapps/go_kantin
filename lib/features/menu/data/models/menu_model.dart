@@ -6,7 +6,7 @@ class MenuModel extends Equatable {
   final String id;
   final String stanId; // ref to Stan
   final String stanName; // denormalized
-  final String namaMakanan;
+  final String namaItem;
   final double harga;
   final String jenis; // 'makanan' | 'minuman'
   final String foto; // image URL
@@ -18,7 +18,7 @@ class MenuModel extends Equatable {
     required this.id,
     required this.stanId,
     required this.stanName,
-    required this.namaMakanan,
+    required this.namaItem,
     required this.harga,
     required this.jenis,
     required this.foto,
@@ -31,17 +31,28 @@ class MenuModel extends Equatable {
     DocumentSnapshot<Map<String, dynamic>> snapshot,
   ) {
     final data = snapshot.data()!;
+    Timestamp parseTimestamp(dynamic value) {
+      if (value is Timestamp) return value;
+      if (value is String && value.isNotEmpty) {
+        return Timestamp.fromDate(DateTime.parse(value));
+      }
+      if (value is int) {
+        return Timestamp.fromMillisecondsSinceEpoch(value);
+      }
+      return Timestamp.now();
+    }
+
     return MenuModel(
       id: snapshot.id,
       stanId: data['stanId'] ?? '',
       stanName: data['stanName'] ?? '',
-      namaMakanan: data['namaMakanan'] ?? '',
+      namaItem: data['namaItem'] ?? '',
       harga: (data['harga'] ?? 0).toDouble(),
       jenis: data['jenis'] ?? '',
       foto: data['foto'] ?? '',
       deskripsi: data['deskripsi'] ?? '',
       isAvailable: data['isAvailable'] ?? true,
-      createdAt: data['createdAt'] ?? FieldValue.serverTimestamp() as Timestamp,
+      createdAt: parseTimestamp(data['createdAt']),
     );
   }
 
@@ -49,7 +60,7 @@ class MenuModel extends Equatable {
     return {
       'stanId': stanId,
       'stanName': stanName,
-      'namaMakanan': namaMakanan,
+      'namaItem': namaItem,
       'harga': harga,
       'jenis': jenis,
       'foto': foto,
@@ -64,14 +75,14 @@ class MenuModel extends Equatable {
       id: json['id'] ?? '',
       stanId: json['stanId'] ?? '',
       stanName: json['stanName'] ?? '',
-      namaMakanan: json['namaMakanan'] ?? '',
+      namaItem: json['namaItem'] ?? '',
       harga: (json['harga'] ?? 0).toDouble(),
       jenis: json['jenis'] ?? '',
       foto: json['foto'] ?? '',
       deskripsi: json['deskripsi'] ?? '',
       isAvailable: json['isAvailable'] ?? true,
-      createdAt: json['createdAt'] != null 
-          ? Timestamp.fromDate(DateTime.parse(json['createdAt'])) 
+      createdAt: json['createdAt'] != null
+          ? Timestamp.fromDate(DateTime.parse(json['createdAt']))
           : Timestamp.now(),
     );
   }
@@ -81,7 +92,7 @@ class MenuModel extends Equatable {
       'id': id,
       'stanId': stanId,
       'stanName': stanName,
-      'namaMakanan': namaMakanan,
+      'namaItem': namaItem,
       'harga': harga,
       'jenis': jenis,
       'foto': foto,
@@ -96,7 +107,7 @@ class MenuModel extends Equatable {
       id: entity.id,
       stanId: entity.stanId,
       stanName: entity.stanName,
-      namaMakanan: entity.namaMakanan,
+      namaItem: entity.namaItem,
       harga: entity.harga,
       jenis: entity.jenis,
       foto: entity.foto,
@@ -111,7 +122,7 @@ class MenuModel extends Equatable {
       id: id,
       stanId: stanId,
       stanName: stanName,
-      namaMakanan: namaMakanan,
+      namaItem: namaItem,
       harga: harga,
       jenis: jenis,
       foto: foto,
@@ -125,7 +136,7 @@ class MenuModel extends Equatable {
     String? id,
     String? stanId,
     String? stanName,
-    String? namaMakanan,
+    String? namaItem,
     double? harga,
     String? jenis,
     String? foto,
@@ -137,7 +148,7 @@ class MenuModel extends Equatable {
       id: id ?? this.id,
       stanId: stanId ?? this.stanId,
       stanName: stanName ?? this.stanName,
-      namaMakanan: namaMakanan ?? this.namaMakanan,
+      namaItem: namaItem ?? this.namaItem,
       harga: harga ?? this.harga,
       jenis: jenis ?? this.jenis,
       foto: foto ?? this.foto,
@@ -155,7 +166,7 @@ class MenuModel extends Equatable {
     id,
     stanId,
     stanName,
-    namaMakanan,
+    namaItem,
     harga,
     jenis,
     foto,

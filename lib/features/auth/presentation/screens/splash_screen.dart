@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
           if (state is Authenticated) {
             // Navigate based on role
             if (state.user.isSiswa) {
-              _navigateAfterDelay('/home');
+              _navigateAfterDelay('/siswa-home');
             } else if (state.user.isAdminStan) {
               _navigateAfterDelay('/stan-orders');
             } else if (state.user.isSuperAdmin) {

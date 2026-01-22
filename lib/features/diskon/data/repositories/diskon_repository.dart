@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
-import '../../domain/entities/diskon.dart';
+import '../../domain/entities/menu_diskon.dart';
 import '../../domain/repositories/i_diskon_repository.dart';
 import '../datasources/diskon_datasource.dart';
 

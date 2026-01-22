@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
-import 'package:kantin_app/features/diskon/domain/entities/diskon.dart';
+import 'package:kantin_app/features/diskon/domain/entities/menu_diskon.dart';
 
 class DiskonModel extends Equatable {
   final String id;
@@ -25,14 +25,25 @@ class DiskonModel extends Equatable {
     DocumentSnapshot<Map<String, dynamic>> snapshot,
   ) {
     final data = snapshot.data()!;
+    Timestamp parseTimestamp(dynamic value) {
+      if (value is Timestamp) return value;
+      if (value is String && value.isNotEmpty) {
+        return Timestamp.fromDate(DateTime.parse(value));
+      }
+      if (value is int) {
+        return Timestamp.fromMillisecondsSinceEpoch(value);
+      }
+      return Timestamp.now();
+    }
+
     return DiskonModel(
       id: snapshot.id,
       namaDiskon: data['namaDiskon'] ?? '',
       persentaseDiskon: (data['persentaseDiskon'] ?? 0).toDouble(),
-      tanggalAwal: data['tanggalAwal'] ?? Timestamp.now(),
-      tanggalAkhir: data['tanggalAkhir'] ?? Timestamp.now(),
+      tanggalAwal: parseTimestamp(data['tanggalAwal']),
+      tanggalAkhir: parseTimestamp(data['tanggalAkhir']),
       isActive: data['isActive'] ?? true,
-      createdAt: data['createdAt'] ?? FieldValue.serverTimestamp() as Timestamp,
+      createdAt: parseTimestamp(data['createdAt']),
     );
   }
 
@@ -52,15 +63,15 @@ class DiskonModel extends Equatable {
       id: json['id'] ?? '',
       namaDiskon: json['namaDiskon'] ?? '',
       persentaseDiskon: (json['persentaseDiskon'] ?? 0).toDouble(),
-      tanggalAwal: json['tanggalAwal'] != null 
-          ? Timestamp.fromDate(DateTime.parse(json['tanggalAwal'])) 
+      tanggalAwal: json['tanggalAwal'] != null
+          ? Timestamp.fromDate(DateTime.parse(json['tanggalAwal']))
           : Timestamp.now(),
-      tanggalAkhir: json['tanggalAkhir'] != null 
-          ? Timestamp.fromDate(DateTime.parse(json['tanggalAkhir'])) 
+      tanggalAkhir: json['tanggalAkhir'] != null
+          ? Timestamp.fromDate(DateTime.parse(json['tanggalAkhir']))
           : Timestamp.now(),
       isActive: json['isActive'] ?? true,
-      createdAt: json['createdAt'] != null 
-          ? Timestamp.fromDate(DateTime.parse(json['createdAt'])) 
+      createdAt: json['createdAt'] != null
+          ? Timestamp.fromDate(DateTime.parse(json['createdAt']))
           : Timestamp.now(),
     );
   }
@@ -123,9 +134,9 @@ class DiskonModel extends Equatable {
 
   bool get isValid {
     final now = DateTime.now();
-    return isActive && 
-           now.isAfter(tanggalAwal.toDate()) && 
-           now.isBefore(tanggalAkhir.toDate());
+    return isActive &&
+        now.isAfter(tanggalAwal.toDate()) &&
+        now.isBefore(tanggalAkhir.toDate());
   }
 
   bool get isExpired {

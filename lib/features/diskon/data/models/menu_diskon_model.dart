@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
-import 'package:kantin_app/features/diskon/domain/entities/diskon.dart';
+import 'package:kantin_app/features/diskon/domain/entities/menu_diskon.dart';
 
 class MenuDiskonModel extends Equatable {
   final String id;

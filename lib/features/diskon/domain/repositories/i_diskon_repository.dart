@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
-import '../entities/diskon.dart';
+import '../entities/menu_diskon.dart';
 
 /// Diskon repository interface
 abstract class IDiskonRepository {

@@ -5,7 +5,6 @@ import 'package:kantin_app/core/theme/app_theme.dart';
 import 'package:kantin_app/core/widgets/custom_textfield.dart';
 import 'package:kantin_app/core/widgets/primary_button.dart';
 
-import '../../../../core/utils/constants.dart';
 import '../../../../core/utils/validators.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -64,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
           } else if (state is Authenticated) {
             // Navigate based on role
             if (state.user.isSiswa) {
-              context.go('/menu');
+              context.go('/siswa-home');
             } else if (state.user.isAdminStan) {
               context.go('/stan-orders');
             } else if (state.user.isSuperAdmin) {

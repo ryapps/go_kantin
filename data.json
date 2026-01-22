@@ -1,0 +1,166 @@
+{
+  "users": {
+    "user_siswa_001": {
+      "username": "andi_siswa",
+      "role": "siswa",
+      "createdAt": "2026-01-20T08:00:00.000Z"
+    },
+    "user_admin_001": {
+      "username": "budi_admin",
+      "role": "admin_stan",
+      "createdAt": "2026-01-18T03:00:00.000Z"
+    }
+  },
+  "siswa": {
+    "siswa_001": {
+      "userId": "user_siswa_001",
+      "namaSiswa": "Andi Pratama",
+      "alamat": "Jl. Mawar No. 10, Bandung",
+      "telp": "081234567890",
+      "foto": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e",
+      "dailyOrderCount": 2,
+      "lastOrderDate": "2026-01-20"
+    }
+  },
+  "stan": {
+    "stan_001": {
+      "userId": "user_admin_001",
+      "namaStan": "Kantin Bu Sari",
+      "namaPemilik": "Sari Wulandari",
+      "telp": "081298765432",
+      "isActive": true,
+      "createdAt": "2026-01-15T02:00:00.000Z",
+      "description": "Aneka nasi dan lauk rumahan",
+      "imageUrl": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
+      "rating": 4.6,
+      "reviewCount": 124,
+      "openTime": "07:00",
+      "closeTime": "16:00",
+      "categories": ["aneka_nasi", "masakan_rumahan"],
+      "location": "Kantin Utama Lantai 1"
+    }
+  },
+  "menu": {
+    "menu_001": {
+      "stanId": "stan_001",
+      "stanName": "Kantin Bu Sari",
+      "namaItem": "Nasi Ayam Geprek",
+      "harga": 15000,
+      "jenis": "makanan",
+      "foto": "https://images.unsplash.com/photo-1604908554160-1b8e6b5a0f4b",
+      "deskripsi": "Ayam geprek pedas, lalapan, sambal",
+      "isAvailable": true,
+      "createdAt": "2026-01-15T03:00:00.000Z"
+    },
+    "menu_002": {
+      "stanId": "stan_001",
+      "stanName": "Kantin Bu Sari",
+      "namaItem": "Nasi Telur Balado",
+      "harga": 12000,
+      "jenis": "makanan",
+      "foto": "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
+      "deskripsi": "Telur balado, sayur, sambal",
+      "isAvailable": true,
+      "createdAt": "2026-01-15T03:05:00.000Z"
+    },
+    "menu_003": {
+      "stanId": "stan_001",
+      "stanName": "Kantin Bu Sari",
+      "namaItem": "Es Teh Manis",
+      "harga": 5000,
+      "jenis": "minuman",
+      "foto": "https://images.unsplash.com/photo-1464306076886-da185f7f9f17",
+      "deskripsi": "Teh manis dingin",
+      "isAvailable": true,
+      "createdAt": "2026-01-15T03:10:00.000Z"
+    }
+  },
+  "diskon": {
+    "diskon_10": {
+      "namaDiskon": "Promo Hemat 10%",
+      "persentaseDiskon": 10,
+      "tanggalAwal": "2026-01-10T00:00:00.000Z",
+      "tanggalAkhir": "2026-02-10T00:00:00.000Z",
+      "isActive": true,
+      "createdAt": "2026-01-10T00:00:00.000Z"
+    },
+    "diskon_20": {
+      "namaDiskon": "Diskon Spesial 20%",
+      "persentaseDiskon": 20,
+      "tanggalAwal": "2026-01-15T00:00:00.000Z",
+      "tanggalAkhir": "2026-01-31T00:00:00.000Z",
+      "isActive": true,
+      "createdAt": "2026-01-15T00:00:00.000Z"
+    }
+  },
+  "menu_diskon": {
+    "md_001": {
+      "menuId": "menu_001",
+      "diskonId": "diskon_10"
+    },
+    "md_002": {
+      "menuId": "menu_002",
+      "diskonId": "diskon_20"
+    },
+    "md_003": {
+      "menuId": "menu_003",
+      "diskonId": "diskon_10"
+    }
+  },
+  "transaksi": {
+    "trx_001": {
+      "siswaId": "siswa_001",
+      "siswaName": "Andi Pratama",
+      "stanId": "stan_001",
+      "stanName": "Kantin Bu Sari",
+      "items": [
+        {
+          "id": "dt_001",
+          "transaksiId": "trx_001",
+          "menuId": "menu_001",
+          "namaMakanan": "Nasi Ayam Geprek",
+          "hargaBeli": 15000,
+          "qty": 1,
+          "discountAmount": 1500,
+          "subtotal": 13500
+        },
+        {
+          "id": "dt_002",
+          "transaksiId": "trx_001",
+          "menuId": "menu_003",
+          "namaMakanan": "Es Teh Manis",
+          "hargaBeli": 5000,
+          "qty": 2,
+          "discountAmount": 1000,
+          "subtotal": 9000
+        }
+      ],
+      "totalAmount": 25000,
+      "totalDiscount": 2500,
+      "finalAmount": 22500,
+      "status": "belum_dikonfirm",
+      "createdAt": "2026-01-20T08:30:00.000Z",
+      "updatedAt": "2026-01-20T08:30:00.000Z"
+    }
+  },
+  "detail_transaksi": {
+    "dt_001": {
+      "transaksiId": "trx_001",
+      "menuId": "menu_001",
+      "namaMakanan": "Nasi Ayam Geprek",
+      "hargaBeli": 15000,
+      "qty": 1,
+      "discountAmount": 1500,
+      "subtotal": 13500
+    },
+    "dt_002": {
+      "transaksiId": "trx_001",
+      "menuId": "menu_003",
+      "namaMakanan": "Es Teh Manis",
+      "hargaBeli": 5000,
+      "qty": 2,
+      "discountAmount": 1000,
+      "subtotal": 9000
+    }
+  }
+}
