@@ -42,5 +42,5 @@ abstract class IAuthRepository {
   Future<Either<Failure, void>> deleteAccount(String userId);
 
   /// Sign in with Google
-  Future<Either<Failure, User>> googleSignIn();
+  Future<Either<Failure, User>> googleSignIn({String role});
 }

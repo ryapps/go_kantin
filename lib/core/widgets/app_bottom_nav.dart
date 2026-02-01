@@ -28,6 +28,12 @@ class AppBottomNav extends StatelessWidget {
           case 1:
             context.go('/transaksi-history');
             return;
+          case 2:
+            context.go('/favorites');
+            return;
+          case 3:
+            context.go('/profile');
+            return;
           default:
             return;
         }

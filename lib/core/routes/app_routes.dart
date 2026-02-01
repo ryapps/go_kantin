@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kantin_app/core/di/injection_container.dart';
+import 'package:kantin_app/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:kantin_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kantin_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/register_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/role_selector_screen.dart';
@@ -9,6 +11,9 @@ import 'package:kantin_app/features/auth/presentation/screens/splash_screen.dart
 import 'package:kantin_app/features/checkout/presentation/bloc/checkout_bloc.dart';
 import 'package:kantin_app/features/checkout/presentation/screens/checkout_screen.dart';
 import 'package:kantin_app/features/home/presentation/screens/siswa_home_screen.dart';
+import 'package:kantin_app/features/profile/presentation/screens/profile_screen.dart';
+import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_bloc.dart';
+import 'package:kantin_app/features/stan/presentation/screens/complete_stan_profile_screen.dart';
 import 'package:kantin_app/features/transaksi/presentation/bloc/order_tracking_bloc.dart';
 import 'package:kantin_app/features/transaksi/presentation/bloc/transaksi_history_bloc.dart';
 import 'package:kantin_app/features/transaksi/presentation/screens/order_tracking_screen.dart';
@@ -24,7 +29,10 @@ class AppRouter {
       GoRoute(
         path: '/login',
         builder: (context, state) =>
-            LoginScreen(selectedRole: state.extra as String?),
+            BlocProvider(
+              create: (context) => sl<StanProfileCompletionBloc>(),
+              child: LoginScreen(selectedRole: state.extra as String?),
+            ),
       ),
       GoRoute(
         path: '/register',
@@ -37,10 +45,28 @@ class AppRouter {
             RoleSelectorScreen(email: state.extra as String?),
       ),
 
+      // Admin Routes
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+
       // Placeholder routes (will be implemented in next phases)
       GoRoute(
         path: '/siswa-home',
         builder: (context, state) => const SiswaHomeScreen(),
+      ),
+      GoRoute(
+        path: '/favorites',
+        builder: (context, state) => const PlaceholderScreen(
+          title: 'Favorit',
+          message: 'Daftar favorit akan diimplementasikan di fase berikutnya',
+          icon: Icons.favorite_outline,
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/checkout',
@@ -59,14 +85,6 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: '/admin',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Admin Dashboard',
-          message: 'Admin dashboard akan diimplementasikan di fase berikutnya',
-          icon: Icons.admin_panel_settings,
-        ),
-      ),
-      GoRoute(
         path: '/complete-siswa-profile',
         builder: (context, state) => const PlaceholderScreen(
           title: 'Lengkapi Profile',
@@ -77,11 +95,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/complete-stan-profile',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Lengkapi Data Stan',
-          message: 'Stan profile akan diimplementasikan di fase berikutnya',
-          icon: Icons.store,
-        ),
+        builder: (context, state) => const CompleteStanProfileScreen(),
       ),
       GoRoute(
         path: '/order-tracking/:id',

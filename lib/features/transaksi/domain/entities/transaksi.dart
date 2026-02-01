@@ -44,7 +44,9 @@ class Transaksi extends Equatable {
   final double totalAmount;
   final double totalDiscount;
   final double finalAmount;
-  final String status; // 'belum_dikonfirm' | 'dimasak' | 'diantar' | 'sampai' | 'dibatalkan'
+  final String
+  status; // 'belum_dikonfirm' | 'dimasak' | 'diantar' | 'sampai' | 'dibatalkan'
+  final String? paymentMethod; // payment method used for the transaction
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -59,6 +61,7 @@ class Transaksi extends Equatable {
     required this.totalDiscount,
     required this.finalAmount,
     required this.status,
+    this.paymentMethod,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -66,7 +69,8 @@ class Transaksi extends Equatable {
   bool get canBeCancelled => status == 'belum_dikonfirm';
   bool get isCompleted => status == 'sampai';
   bool get isCancelled => status == 'dibatalkan';
-  bool get isPending => status == 'belum_dikonfirm' || status == 'dimasak' || status == 'diantar';
+  bool get isPending =>
+      status == 'belum_dikonfirm' || status == 'dimasak' || status == 'diantar';
 
   @override
   List<Object?> get props => [
@@ -80,6 +84,7 @@ class Transaksi extends Equatable {
     totalDiscount,
     finalAmount,
     status,
+    paymentMethod,
     createdAt,
     updatedAt,
   ];

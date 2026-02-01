@@ -74,7 +74,15 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
           .collection(AppConstants.stanCollection)
           .doc(stanId)
           .get();
-      final stanName = stanDoc.data()?['namaStan'] ?? '';
+
+      if (!stanDoc.exists) {
+        throw ServerException('Stan tidak ditemukan untuk ID: $stanId');
+      }
+
+      final stanName = stanDoc.data()?['namaStan'];
+      if (stanName == null || stanName.toString().trim().isEmpty) {
+        throw ServerException('Nama stan tidak valid untuk ID: $stanId');
+      }
 
       final collection = _firestore.collection(AppConstants.menuCollection);
       final docRef = await collection.add({
@@ -184,12 +192,42 @@ class MenuRemoteDatasourceImpl implements MenuRemoteDatasource {
     String? deskripsi,
   }) async {
     try {
+      // Get the current menu to retrieve the stanId
+      final menuSnapshot = await _firestore
+          .collection(AppConstants.menuCollection)
+          .doc(menuId)
+          .get();
+
+      if (!menuSnapshot.exists) {
+        throw ServerException('Menu tidak ditemukan');
+      }
+
+      final menuData = menuSnapshot.data()!;
+      final stanId = menuData['stanId'] as String;
+
+      // Get the current stanName to ensure it's still valid
+      final stanDoc = await _firestore
+          .collection(AppConstants.stanCollection)
+          .doc(stanId)
+          .get();
+
+      if (!stanDoc.exists) {
+        throw ServerException('Stan tidak ditemukan untuk ID: $stanId');
+      }
+
+      final stanName = stanDoc.data()?['namaStan'];
+      if (stanName == null || stanName.toString().trim().isEmpty) {
+        throw ServerException('Nama stan tidak valid untuk ID: $stanId');
+      }
+
       final updateData = <String, dynamic>{};
       if (namaMakanan != null) updateData['namaItem'] = namaMakanan;
       if (harga != null) updateData['harga'] = harga;
       if (jenis != null) updateData['jenis'] = jenis;
       if (fotoPath != null) updateData['foto'] = fotoPath;
       if (deskripsi != null) updateData['deskripsi'] = deskripsi;
+      // Always update the stanName to ensure it's current
+      updateData['stanName'] = stanName;
 
       if (updateData.isNotEmpty) {
         await _firestore

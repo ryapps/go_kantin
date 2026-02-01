@@ -5,6 +5,9 @@ import 'package:kantin_app/core/theme/app_theme.dart';
 import 'package:kantin_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kantin_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kantin_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_bloc.dart';
+import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_event.dart';
+import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_state.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -30,32 +33,58 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
+  void _checkStanProfile(Authenticated state) {
+    if (state.user.isAdminStan) {
+      // Check if stan profile exists
+      context.read<StanProfileCompletionBloc>().add(
+        CheckStanProfileRequested(userId: state.user.id),
+      );
+    } else {
+      // For non-stan admins, navigate normally
+      if (state.user.isSiswa) {
+        _navigateAfterDelay('/siswa-home');
+      } else if (state.user.isSuperAdmin) {
+        _navigateAfterDelay('/admin');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is Authenticated) {
-            // Navigate based on role
-            if (state.user.isSiswa) {
-              _navigateAfterDelay('/siswa-home');
-            } else if (state.user.isAdminStan) {
-              _navigateAfterDelay('/stan-orders');
-            } else if (state.user.isSuperAdmin) {
-              _navigateAfterDelay('/admin');
-            }
-          } else if (state is Unauthenticated) {
-            _navigateAfterDelay('/select-role');
-          } else if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-            _navigateAfterDelay('/select-role');
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is Authenticated) {
+                _checkStanProfile(state);
+              } else if (state is Unauthenticated) {
+                _navigateAfterDelay('/select-role');
+              } else if (state is AuthError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                _navigateAfterDelay('/select-role');
+              }
+            },
+          ),
+          BlocListener<StanProfileCompletionBloc, StanProfileCompletionState>(
+            listener: (context, state) {
+              if (state is StanProfileCompletionInitial || state is StanProfileCompletionLoading) {
+                // Still checking, do nothing
+              } else if (state is StanProfileSavedSuccessfully) {
+                // Profile exists, navigate to admin dashboard
+                _navigateAfterDelay('/admin');
+              } else if (state is StanProfileCompletionError) {
+                // Profile doesn't exist or error occurred, navigate to complete profile
+                _navigateAfterDelay('/complete-stan-profile');
+              }
+            },
+          ),
+        ],
         child: Container(
           decoration: BoxDecoration(color: AppTheme.backgroundColor),
           child: Center(

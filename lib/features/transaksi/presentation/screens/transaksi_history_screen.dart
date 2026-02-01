@@ -155,7 +155,7 @@ class _TransaksiHistoryScreenState extends State<TransaksiHistoryScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      width: 151,
+      width: 194,
       alignment: Alignment.centerLeft,
       child: DropdownButtonFormField<String?>(
         value: effectiveValue,
@@ -207,7 +207,7 @@ class _TransaksiHistoryScreenState extends State<TransaksiHistoryScreen> {
       final date = item.createdAt;
       final key =
           '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}';
-      final label = '${date.month.toString().padLeft(2, '0')}/${date.year}';
+      final label = '${AppUtils.getIndonesianMonth(date.month)} ${date.year}';
       map.putIfAbsent(key, () => label);
     }
     final sortedKeys = map.keys.toList()..sort((a, b) => b.compareTo(a));

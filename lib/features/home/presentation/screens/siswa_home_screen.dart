@@ -129,194 +129,199 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
               ..sort((a, b) => b.rating.compareTo(a.rating));
             final trendingItems = trendingStalls.take(4).toList();
             return SafeArea(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: CustomTextField(
-                        controller: searchController,
-                        hint: 'Search',
-                        height: 60,
-                        prefixIcon: Icons.search,
-                        borderRadius: 25,
-                      ),
-                    ),
-                    // Food Type Grid
-                    FoodCategoryGrid(
-                      categories: Category.all,
-                      selectedCategoryId: state.selectedCategoryId,
-                      onCategorySelected: (categoryId) {
-                        context.read<SiswaHomeBloc>().add(
-                          SelectCategoryEvent(categoryId),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(),
-                    ...state.filteredStalls.map(
-                      (stall) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: KantinStallCard(
-                          stan: stall,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    CanteenDetailScreen(stan: stall),
-                              ),
-                            );
-                          },
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  context.read<SiswaHomeBloc>().add(const RefreshStallsEvent());
+                },
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: CustomTextField(
+                          controller: searchController,
+                          hint: 'Search',
+                          height: 60,
+                          prefixIcon: Icons.search,
+                          borderRadius: 25,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: OfferBanner(),
-                    ),
-
-                    const SizedBox(height: 24),
-                    const SizedBox(height: 28),
-
-                    // Popular Stall Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Kantin Populer',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                'See All',
-                                style: Theme.of(context).textTheme.labelMedium,
-                              ),
-                            ],
-                          ),
-                        ],
+                      // Food Type Grid
+                      FoodCategoryGrid(
+                        categories: Category.all,
+                        selectedCategoryId: state.selectedCategoryId,
+                        onCategorySelected: (categoryId) {
+                          context.read<SiswaHomeBloc>().add(
+                            SelectCategoryEvent(categoryId),
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 250,
-                      child: PageView(
-                        children: [
-                          ...state.allStalls.map(
-                            (stan) => Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
-                              child: KantinStallCard(
-                                stan: stan,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          CanteenDetailScreen(stan: stan),
+
+                      const SizedBox(),
+                      ...state.filteredStalls.map(
+                        (stall) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: KantinStallCard(
+                            stan: stall,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      CanteenDetailScreen(stan: stall),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: OfferBanner(),
+                      ),
+
+                      const SizedBox(height: 24),
+                      const SizedBox(height: 28),
+
+                      // Popular Stall Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Kantin Populer',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(fontWeight: FontWeight.bold),
                                     ),
-                                  );
-                                },
+                                  ],
+                                ),
+                                Text(
+                                  'See All',
+                                  style: Theme.of(context).textTheme.labelMedium,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 250,
+                        child: PageView(
+                          children: [
+                            ...state.allStalls.map(
+                              (stan) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: KantinStallCard(
+                                  stan: stan,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CanteenDetailScreen(stan: stan),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 28),
+                      const SizedBox(height: 28),
 
-                    // Trending Stall Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Trending Stall',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.timer,
-                                        size: 16,
-                                        color: Colors.grey,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '3.1 mins',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.labelSmall,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                'See All',
-                                style: Theme.of(context).textTheme.labelMedium,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 250,
-                      child: PageView(
-                        children: [
-                          ...trendingItems.map(
-                            (stan) => Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
-                              child: KantinStallCard(
-                                stan: stan,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          CanteenDetailScreen(stan: stan),
+                      // Trending Stall Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Trending Stall',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(fontWeight: FontWeight.bold),
                                     ),
-                                  );
-                                },
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.timer,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '3.1 mins',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.labelSmall,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  'See All',
+                                  style: Theme.of(context).textTheme.labelMedium,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 250,
+                        child: PageView(
+                          children: [
+                            ...trendingItems.map(
+                              (stan) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: KantinStallCard(
+                                  stan: stan,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CanteenDetailScreen(stan: stan),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             );

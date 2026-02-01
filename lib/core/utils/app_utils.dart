@@ -141,4 +141,34 @@ class AppUtils {
     final sizeInMB = sizeInBytes / (1024 * 1024);
     return sizeInMB <= AppConstants.maxImageSizeMB;
   }
+
+  /// Get Indonesian month name
+  static String getIndonesianMonth(int month) {
+    const months = [
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    if (month >= 1 && month <= 12) {
+      return months[month];
+    }
+
+    return '';
+  }
+
+  /// Format month-year in Indonesian
+  static String formatMonthYearIndonesian(DateTime date) {
+    return '${getIndonesianMonth(date.month)} ${date.year}';
+  }
 }

@@ -28,3 +28,12 @@ class OrderTrackingStreamUpdated extends OrderTrackingEvent {
   @override
   List<Object?> get props => [result];
 }
+
+class CancelOrderRequested extends OrderTrackingEvent {
+  final String transaksiId;
+
+  const CancelOrderRequested({required this.transaksiId});
+
+  @override
+  List<Object> get props => [transaksiId];
+}

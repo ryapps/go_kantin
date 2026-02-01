@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kantin_app/core/utils/constants.dart';
 
 import '../../domain/repositories/i_transaksi_repository.dart';
 import 'order_tracking_event.dart';
@@ -14,6 +15,7 @@ class OrderTrackingBloc extends Bloc<OrderTrackingEvent, OrderTrackingState> {
     : super(const OrderTrackingLoading()) {
     on<OrderTrackingStarted>(_onStarted);
     on<OrderTrackingStreamUpdated>(_onStreamUpdated);
+    on<CancelOrderRequested>(_onCancelOrderRequested);
   }
 
   Future<void> _onStarted(
@@ -37,6 +39,22 @@ class OrderTrackingBloc extends Bloc<OrderTrackingEvent, OrderTrackingState> {
     event.result.fold(
       (failure) => emit(OrderTrackingError(failure.message)),
       (transaksi) => emit(OrderTrackingLoaded(transaksi)),
+    );
+  }
+
+  Future<void> _onCancelOrderRequested(
+    CancelOrderRequested event,
+    Emitter<OrderTrackingState> emit,
+  ) async {
+    // Update the order status to cancelled
+    final result = await transaksiRepository.updateTransaksiStatus(
+      transaksiId: event.transaksiId,
+      newStatus: AppConstants.statusDibatalkan,
+    );
+
+    result.fold(
+      (failure) => emit(OrderTrackingError(failure.message)),
+      (updatedTransaksi) => emit(OrderTrackingLoaded(updatedTransaksi)),
     );
   }
 

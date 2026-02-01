@@ -21,6 +21,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GoogleSignInUseCase _googleSignInUseCase;
 
   StreamSubscription? _authStateSubscription;
+  bool _isAdminCreatingCustomer = false; // Flag to track if admin is creating customer
+  User? _originalAdminUser; // Store the original admin user
 
   AuthBloc({
     required LoginUseCase loginUseCase,
@@ -42,6 +44,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>(_onLogoutRequested);
     on<AuthStateChangeSubscribed>(_onAuthStateChangeSubscribed);
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
+    on<AdminCreatingCustomerStarted>(_onAdminCreatingCustomerStarted);
+    on<AdminCreatingCustomerCompleted>(_onAdminCreatingCustomerCompleted);
   }
 
   /// Check current authentication status
@@ -53,13 +57,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     final result = await _getCurrentUserUseCase();
 
-    result.fold((failure) => emit(AuthError(failure.message)), (user) {
-      if (user != null) {
-        emit(Authenticated(user));
-      } else {
-        emit(const Unauthenticated());
-      }
-    });
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (user) {
+        if (user != null) {
+          _originalAdminUser = user; // Store the current user as original admin user
+          emit(Authenticated(user));
+        } else {
+          emit(const Unauthenticated());
+        }
+      },
+    );
   }
 
   /// Handle login request
@@ -75,7 +83,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) {
+        // Emit authenticated user regardless of role selection
+        // Role validation will be handled in the UI layer
+        _originalAdminUser = user; // Store the current user as original admin user
+        emit(Authenticated(user));
+      },
     );
   }
 
@@ -112,7 +125,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (_) => emit(const Unauthenticated()),
+      (_) {
+        _originalAdminUser = null; // Clear the stored admin user
+        return emit(const Unauthenticated());
+      },
     );
   }
 
@@ -126,6 +142,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await emit.forEach<User?>(
       _watchAuthStateUseCase(),
       onData: (user) {
+        // If admin is creating customer, ignore the auth state change temporarily
+        if (_isAdminCreatingCustomer) {
+          // Don't emit anything, just return the current state
+          return state;
+        }
+
         if (user != null) {
           return Authenticated(user);
         } else {
@@ -143,12 +165,43 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
 
-    final result = await _googleSignInUseCase();
+    final result = await _googleSignInUseCase(
+      GoogleSignInParams(role: event.role),
+    );
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (user) => emit(Authenticated(user)),
+      (user) {
+        _originalAdminUser = user; // Store the current user as original admin user
+        emit(Authenticated(user));
+      },
     );
+  }
+
+  /// Handle admin starting to create customer
+  void _onAdminCreatingCustomerStarted(
+    AdminCreatingCustomerStarted event,
+    Emitter<AuthState> emit,
+  ) {
+    _isAdminCreatingCustomer = true;
+  }
+
+  /// Handle admin completing customer creation
+  void _onAdminCreatingCustomerCompleted(
+    AdminCreatingCustomerCompleted event,
+    Emitter<AuthState> emit,
+  ) {
+    _isAdminCreatingCustomer = false;
+
+    // Emit the original admin user state after customer creation
+    // If original admin user is provided in the event, use that
+    // Otherwise, try to get the current user (which might be the new customer)
+    if (event.originalAdminUser != null) {
+      emit(Authenticated(event.originalAdminUser!));
+    } else if (_originalAdminUser != null) {
+      // If we have stored the original admin user, restore that session
+      emit(Authenticated(_originalAdminUser!));
+    }
   }
 
   @override

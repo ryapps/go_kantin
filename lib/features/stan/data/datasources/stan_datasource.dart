@@ -12,6 +12,11 @@ abstract class StanRemoteDatasource {
     required String namaStan,
     required String namaPemilik,
     required String telp,
+    String? description,
+    String? location,
+    String? openTime,
+    String? closeTime,
+    String? imageUrl,
   });
 
   /// Get all active stans
@@ -29,6 +34,11 @@ abstract class StanRemoteDatasource {
     String? namaStan,
     String? namaPemilik,
     String? telp,
+    String? description,
+    String? location,
+    String? openTime,
+    String? closeTime,
+    String? imageUrl,
   });
 
   /// Activate stan
@@ -56,6 +66,11 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
     required String namaStan,
     required String namaPemilik,
     required String telp,
+    String? description,
+    String? location,
+    String? openTime,
+    String? closeTime,
+    String? imageUrl,
   }) async {
     try {
       final collection = _firestore.collection(AppConstants.stanCollection);
@@ -66,14 +81,14 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
         'telp': telp,
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
-        'description': '',
-        'imageUrl': '',
+        'description': description ?? '',
+        'imageUrl': imageUrl ?? 'https://via.placeholder.com/400x200?text=Stan',
         'rating': 0.0,
         'reviewCount': 0,
-        'openTime': '',
-        'closeTime': '',
+        'openTime': openTime ?? '08:00',
+        'closeTime': closeTime ?? '17:00',
         'categories': <String>[],
-        'location': '',
+        'location': location ?? '',
       });
       final snapshot = await docRef.get();
       return StanModel.fromFirestore(snapshot);
@@ -139,12 +154,22 @@ class StanRemoteDatasourceImpl implements StanRemoteDatasource {
     String? namaStan,
     String? namaPemilik,
     String? telp,
+    String? description,
+    String? location,
+    String? openTime,
+    String? closeTime,
+    String? imageUrl,
   }) async {
     try {
       final updateData = <String, dynamic>{};
       if (namaStan != null) updateData['namaStan'] = namaStan;
       if (namaPemilik != null) updateData['namaPemilik'] = namaPemilik;
       if (telp != null) updateData['telp'] = telp;
+      if (description != null) updateData['description'] = description;
+      if (location != null) updateData['location'] = location;
+      if (openTime != null) updateData['openTime'] = openTime;
+      if (closeTime != null) updateData['closeTime'] = closeTime;
+      if (imageUrl != null) updateData['imageUrl'] = imageUrl;
 
       if (updateData.isNotEmpty) {
         await _firestore

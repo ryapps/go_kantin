@@ -85,6 +85,7 @@ class TransaksiRemoteDatasourceImpl implements TransaksiRemoteDatasource {
 
       final siswaName = await _getSiswaName(siswaId);
       final stanName = await _getStanName(stanId);
+      final email = await _getSiswaEmail(siswaId); // Get student email
 
       final itemsWithTransaksiId = items.map((item) {
         return item.copyWith(
@@ -123,6 +124,14 @@ class TransaksiRemoteDatasourceImpl implements TransaksiRemoteDatasource {
       );
 
       await transaksiRef.set(transaksiModel.toFirestore());
+
+      // Save/update customer data in the customer collection
+      await _saveCustomerData(
+        siswaId: siswaId,
+        siswaName: siswaName,
+        email: email,
+        orderAmount: finalAmount,
+      );
 
       return transaksiModel;
     } catch (e) {
@@ -391,6 +400,18 @@ class TransaksiRemoteDatasourceImpl implements TransaksiRemoteDatasource {
     }
   }
 
+  Future<String> _getSiswaEmail(String siswaId) async {
+    try {
+      final doc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(siswaId)
+          .get();
+      return doc.data()?['email'] ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
   Future<String> _getStanName(String stanId) async {
     try {
       final doc = await _firestore
@@ -400,6 +421,51 @@ class TransaksiRemoteDatasourceImpl implements TransaksiRemoteDatasource {
       return doc.data()?['namaStan'] ?? '';
     } catch (_) {
       return '';
+    }
+  }
+
+  Future<void> _saveCustomerData({
+    required String siswaId,
+    required String siswaName,
+    required String email,
+    required double orderAmount,
+  }) async {
+    try {
+      final customerRef = _firestore.collection(AppConstants.customerCollection).doc(siswaId);
+
+      // Get current customer data or create new one
+      final docSnapshot = await customerRef.get();
+
+      if (docSnapshot.exists) {
+        // Update existing customer
+        final existingData = docSnapshot.data()!;
+        final currentOrders = (existingData['totalOrders'] as num?)?.toInt() ?? 0;
+        final currentSpent = (existingData['totalSpent'] as num?)?.toDouble() ?? 0.0;
+
+        await customerRef.update({
+          'totalOrders': currentOrders + 1,
+          'totalSpent': currentSpent + orderAmount,
+          'lastOrderDate': Timestamp.now(),
+          'updatedAt': Timestamp.now(),
+        });
+      } else {
+        // Create new customer
+        await customerRef.set({
+          'userId': siswaId,
+          'name': siswaName,
+          'email': email,
+          'role': 'siswa',
+          'totalOrders': 1,
+          'totalSpent': orderAmount,
+          'lastOrderDate': Timestamp.now(),
+          'createdAt': Timestamp.now(),
+          'updatedAt': Timestamp.now(),
+        });
+      }
+    } catch (e) {
+      // Log the error but don't throw it, as we don't want to fail the transaction
+      // due to customer data saving issue
+      print('Error saving customer data: ${e.toString()}');
     }
   }
 }

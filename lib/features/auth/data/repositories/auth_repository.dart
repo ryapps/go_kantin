@@ -73,7 +73,9 @@ class AuthRepository implements IAuthRepository {
       final userModel = await _datasource.getCurrentUser();
       return Right(userModel?.toEntity());
     } catch (e) {
-      return Left(AuthFailure('Gagal mengambil data user: ${e.toString()}'));
+      // Return null instead of throwing an error to indicate unauthenticated state
+      // This maintains backward compatibility with existing code
+      return const Right(null);
     }
   }
 
@@ -118,9 +120,9 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> googleSignIn() async {
+  Future<Either<Failure, User>> googleSignIn({String role = 'siswa'}) async {
     try {
-      final userModel = await _datasource.signInWithGoogle();
+      final userModel = await _datasource.signInWithGoogle(role: role);
       return Right(userModel.toEntity());
     } catch (e) {
       return Left(AuthFailure('Google Sign In gagal: ${e.toString()}'));

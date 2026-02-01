@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:kantin_app/features/auth/domain/entities/user.dart';
 
 /// Base class for all Auth events
 abstract class AuthEvent extends Equatable {
@@ -57,5 +58,28 @@ class AuthStateChangeSubscribed extends AuthEvent {
 
 /// Sign in with Google
 class GoogleSignInRequested extends AuthEvent {
-  const GoogleSignInRequested();
+  final String role;
+
+  const GoogleSignInRequested({this.role = 'siswa'});
+
+  @override
+  List<Object> get props => [role];
+}
+
+/// Event emitted when admin starts creating customer account
+class AdminCreatingCustomerStarted extends AuthEvent {
+  const AdminCreatingCustomerStarted();
+
+  @override
+  List<Object> get props => [];
+}
+
+/// Event emitted when admin completes customer creation
+class AdminCreatingCustomerCompleted extends AuthEvent {
+  final User? originalAdminUser;
+
+  const AdminCreatingCustomerCompleted({this.originalAdminUser});
+
+  @override
+  List<Object?> get props => [originalAdminUser];
 }

@@ -36,6 +36,42 @@ class Stan extends Equatable {
     this.location = '',
   });
 
+  Stan copyWith({
+    String? id,
+    String? userId,
+    String? namaStan,
+    String? namaPemilik,
+    String? telp,
+    bool? isActive,
+    DateTime? createdAt,
+    String? description,
+    String? imageUrl,
+    double? rating,
+    int? reviewCount,
+    String? openTime,
+    String? closeTime,
+    List<String>? categories,
+    String? location,
+  }) {
+    return Stan(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      namaStan: namaStan ?? this.namaStan,
+      namaPemilik: namaPemilik ?? this.namaPemilik,
+      telp: telp ?? this.telp,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      openTime: openTime ?? this.openTime,
+      closeTime: closeTime ?? this.closeTime,
+      categories: categories ?? this.categories,
+      location: location ?? this.location,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,

@@ -20,7 +20,7 @@ abstract class AuthRemoteDatasource {
     required String role,
   });
 
-  Future<UserModel> signInWithGoogle();
+  Future<UserModel> signInWithGoogle({String role = 'siswa'});
 
   Future<void> signOut();
 
@@ -126,7 +126,7 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
 
   @override
   @override
-  Future<UserModel> signInWithGoogle() async {
+  Future<UserModel> signInWithGoogle({String role = 'siswa'}) async {
     try {
       // Sign out first to get a fresh authentication
       await _googleSignIn.signOut();
@@ -172,11 +172,11 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
         return UserModel.fromFirestore(doc);
       }
 
-      // Create new user document
+      // Create new user document with provided role
       final newUser = UserModel(
         id: firebaseUser.uid,
         username: firebaseUser.displayName ?? firebaseUser.email ?? 'User',
-        role: 'siswa',
+        role: role,
         createdAt: Timestamp.now(),
       );
 
@@ -198,13 +198,22 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
     final user = _firebaseAuth.currentUser;
     if (user == null) return null;
 
-    final doc = await _firestore
-        .collection(AppConstants.usersCollection)
-        .doc(user.uid)
-        .get();
+    try {
+      // Force refresh the ID token to check if it's still valid
+      await user.getIdToken(true); // forceRefresh = true
 
-    if (!doc.exists) return null;
-    return UserModel.fromFirestore(doc);
+      final doc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(user.uid)
+          .get();
+
+      if (!doc.exists) return null;
+      return UserModel.fromFirestore(doc);
+    } catch (e) {
+      // If token refresh fails, the user is no longer authenticated
+      print('Token validation failed: ${e.toString()}');
+      return null;
+    }
   }
 
   @override

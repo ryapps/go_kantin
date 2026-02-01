@@ -55,6 +55,16 @@ dependencies:
   dartz: ^0.10.1
   logger: ^2.0.2+1
 
+  # PDF & Printing
+  pdf: ^3.10.4
+  printing: ^5.11.0
+
+  # Image Processing
+  image_gallery_saver_plus: ^4.0.1
+
+  # HTTP
+  http: ^1.1.0
+
   # Icons
   cupertino_icons: ^1.0.6
   google_fonts: ^7.0.0

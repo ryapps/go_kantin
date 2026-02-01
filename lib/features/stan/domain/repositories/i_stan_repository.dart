@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+
 import '../../../../core/error/failures.dart';
 import '../entities/stan.dart';
 
@@ -10,7 +11,15 @@ abstract class IStanRepository {
     required String namaStan,
     required String namaPemilik,
     required String telp,
+    String? description,
+    String? location,
+    String? openTime,
+    String? closeTime,
+    String? imageUrl,
   });
+
+  /// Create new stan with all profile data (for profile completion)
+  Future<Either<Failure, Stan>> createStanWithProfileData(Map<String, dynamic> stanData);
 
   /// Get all active stans
   Future<Either<Failure, List<Stan>>> getAllStans();
@@ -27,6 +36,11 @@ abstract class IStanRepository {
     String? namaStan,
     String? namaPemilik,
     String? telp,
+    String? description,
+    String? location,
+    String? openTime,
+    String? closeTime,
+    String? imageUrl,
   });
 
   /// Activate stan

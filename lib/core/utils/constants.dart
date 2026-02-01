@@ -6,12 +6,14 @@ class AppConstants {
   // Firebase Collections
   static const String usersCollection = 'users';
   static const String siswaCollection = 'siswa';
-  static const String stanCollection = 'stan';
+  static const String stanCollection = 'stans';
   static const String menuCollection = 'menu';
   static const String transaksiCollection = 'transaksi';
   static const String detailTransaksiCollection = 'detail_transaksi';
   static const String diskonCollection = 'diskon';
   static const String menuDiskonCollection = 'menu_diskon';
+  static const String customerCollection = 'customer';
+  static const String dashboardCollection = 'dashboard';
 
   // Firebase Storage Paths
   static const String profileImagesPath = 'profile_images';
@@ -71,25 +73,25 @@ class ErrorMessages {
   static const String userNotFound = 'User tidak ditemukan';
   static const String wrongPassword = 'Password salah';
   static const String userDisabled = 'Akun dinonaktifkan';
-  
+
   // Network Errors
   static const String noInternetConnection = 'Tidak ada koneksi internet';
   static const String serverError = 'Terjadi kesalahan server';
   static const String timeoutError = 'Koneksi timeout';
-  
+
   // Order Errors
   static const String dailyLimitReached = 'Batas order harian tercapai (100)';
   static const String menuUnavailable = 'Menu tidak tersedia';
   static const String emptyCart = 'Keranjang kosong';
   static const String stanClosed = 'Stan tutup';
-  
+
   // Validation Errors
   static const String fieldRequired = 'Field ini wajib diisi';
   static const String invalidPhoneNumber = 'Nomor telepon tidak valid';
   static const String invalidPrice = 'Harga harus lebih dari 0';
   static const String imageRequired = 'Gambar wajib diunggah';
   static const String imageTooLarge = 'Ukuran gambar maksimal 5MB';
-  
+
   // General
   static const String unknownError = 'Terjadi kesalahan tidak diketahui';
   static const String operationFailed = 'Operasi gagal';
