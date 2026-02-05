@@ -45,7 +45,7 @@ class CustomTextField extends StatelessWidget {
       keyboardType: keyboardType,
       obscureText: obscureText,
       enabled: enabled,
-      maxLines: maxLines,
+      maxLines: maxLines,   
       minLines: minLines,  // Add this
       textCapitalization: textCapitalization,
       onChanged: onChanged,     
@@ -55,6 +55,7 @@ class CustomTextField extends StatelessWidget {
         prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppTheme.textSecondary) : null,
         suffixIcon: suffixIcon,
         floatingLabelBehavior: FloatingLabelBehavior.always,
+        alignLabelWithHint: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),

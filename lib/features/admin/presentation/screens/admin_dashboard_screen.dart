@@ -28,6 +28,10 @@ import 'package:kantin_app/features/admin/presentation/screens/stan_profile_scre
 import 'package:kantin_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kantin_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kantin_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kantin_app/features/category/presentation/bloc/category_management_bloc.dart';
+import 'package:kantin_app/features/category/presentation/screens/category_management_screen.dart';
+import 'package:kantin_app/features/diskon/presentation/bloc/diskon_management_bloc.dart';
+import 'package:kantin_app/features/diskon/presentation/screens/diskon_management_screen.dart';
 
 /// Admin Dashboard - Main screen with drawer navigation
 class AdminDashboardScreen extends StatefulWidget {
@@ -55,16 +59,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final authState = context.read<AuthBloc>().state;
     if (authState is Authenticated) {
       context.read<GetUserStanBloc>().add(LoadUserStanId(authState.user.id));
-      _getUserStanSubscription = context.read<GetUserStanBloc>().stream.listen((state) {
+      _getUserStanSubscription = context.read<GetUserStanBloc>().stream.listen((
+        state,
+      ) {
         if (state is GetUserStanSuccess && mounted) {
           setState(() {
             _stanId = state.stanId;
           });
           // Reload dashboard data after stanId is loaded
-     
-            final dashboardBloc = context.read<DashboardBloc>();
-            dashboardBloc.add(LoadDashboardSummary(_stanId));
-          
+
+          final dashboardBloc = context.read<DashboardBloc>();
+          dashboardBloc.add(LoadDashboardSummary(_stanId));
         }
       });
     }
@@ -81,7 +86,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is Unauthenticated) {
-          context.go('/login');
+          context.go('/login/admin_stan');
         } else if (state is Authenticated && !state.user.isAdminStan) {
           context.go('/siswa-home');
         }
@@ -106,31 +111,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   );
                 },
               ),
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Konfirmasi Keluar'),
-                      content: const Text('Apakah Anda yakin ingin keluar?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Batal'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            context.read<AuthBloc>().add(const LogoutRequested());
-                          },
-                          child: const Text('Keluar'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
             ],
           ),
           drawer: _buildDrawer(context, state.user.username),
@@ -148,6 +128,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         return 'Profil Stan';
       case 'menu':
         return 'Kelola Menu';
+      case 'categories':
+        return 'Kelola Kategori';
+      case 'discounts':
+        return 'Kelola Diskon';
       case 'orders':
         return 'Kelola Pesanan';
       case 'customers':
@@ -222,6 +206,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             context: context,
           ),
           _buildDrawerItem(
+            icon: Icons.category_outlined,
+            title: 'Kelola Kategori',
+            route: 'categories',
+            context: context,
+          ),
+          _buildDrawerItem(
+            icon: Icons.local_offer_outlined,
+            title: 'Kelola Diskon',
+            route: 'discounts',
+            context: context,
+          ),
+          _buildDrawerItem(
             icon: Icons.shopping_bag_outlined,
             title: 'Kelola Pesanan',
             route: 'orders',
@@ -257,6 +253,37 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Bantuan belum tersedia')),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Keluar', style: TextStyle(color: Colors.red)),
+            onTap: () {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Konfirmasi Keluar'),
+                  content: const Text('Apakah Anda yakin ingin keluar?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Batal'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.read<AuthBloc>().add(
+                          const LogoutRequested(role: 'admin_stan'),
+                        );
+                      },
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Keluar'),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -308,6 +335,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           create: (context) =>
               sl<MenuManagementBloc>()..add(LoadMenuItems(_stanId)),
           child: MenuManagementScreen(stanId: _stanId),
+        );
+      case 'categories':
+        return BlocProvider(
+          create: (context) => sl<CategoryManagementBloc>(),
+          child: const CategoryManagementScreen(),
+        );
+      case 'discounts':
+        if (_stanId.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return BlocProvider(
+          create: (context) => sl<DiskonManagementBloc>(),
+          child: DiskonManagementScreen(stanId: _stanId),
         );
       case 'orders':
         if (_stanId.isEmpty) {
@@ -476,7 +516,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             .take(5)
                             .map(
                               (item) => Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 child: Row(
                                   children: [
                                     const Icon(

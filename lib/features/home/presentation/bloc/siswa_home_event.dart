@@ -32,3 +32,7 @@ class ChangeBottomNavEvent extends SiswaHomeEvent {
   @override
   List<Object> get props => [index];
 }
+
+class LoadLocationEvent extends SiswaHomeEvent {
+  const LoadLocationEvent();
+}

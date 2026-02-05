@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kantin_app/core/theme/app_theme.dart';
+import 'package:kantin_app/features/favorite/presentation/bloc/favorite_bloc.dart';
+import 'package:kantin_app/features/favorite/presentation/bloc/favorite_event.dart';
+import 'package:kantin_app/features/favorite/presentation/bloc/favorite_state.dart';
 import 'package:kantin_app/features/menu/domain/entities/menu.dart';
 import 'package:kantin_app/features/stan/domain/entities/stan.dart';
 import 'package:kantin_app/features/stan/presentation/bloc/canteen_detail_bloc.dart';
@@ -65,44 +68,92 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
         child: BlocBuilder<CanteenDetailBloc, CanteenDetailState>(
           builder: (context, state) {
             if (state is CanteenDetailLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return Stack(
+                children: [
+                  const Center(child: CircularProgressIndicator()),
+                  Positioned(
+                    top: 40,
+                    left: 8,
+                    child: IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                  ),
+                ],
+              );
             }
 
             if (state is CanteenDetailEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.fastfood, size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Belum ada menu tersedia',
-                      style: Theme.of(context).textTheme.titleLarge,
+              return Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.fastfood, size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Belum ada menu tersedia',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    top: 40,
+                    left: 8,
+                    child: IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                  ),
+                ],
               );
             }
 
             if (state is CanteenDetailError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(state.message),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<CanteenDetailBloc>().add(
-                          LoadCanteenDetailEvent(widget.stan.id),
-                        );
-                      },
-                      child: const Text('Retry'),
+              return Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(state.message),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<CanteenDetailBloc>().add(
+                              LoadCanteenDetailEvent(widget.stan.id),
+                            );
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    top: 40,
+                    left: 8,
+                    child: IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.all(8),
+                      ),
+                    ),
+                  ),
+                ],
               );
             }
 
@@ -153,7 +204,61 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
           expandedHeight: 250,
           pinned: true,
           backgroundColor: AppTheme.backgroundColor,
-          foregroundColor: AppTheme.textPrimary,
+          foregroundColor: AppTheme.backgroundColor,
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: IconButton(
+              onPressed: () => context.pop(),
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.all(8),
+              ),
+            ),
+          ),
+          actions: [
+            // Favorite Button
+            BlocBuilder<FavoriteBloc, FavoriteState>(
+              builder: (context, favoriteState) {
+                final isFavorite = context.read<FavoriteBloc>().isFavorite(
+                  widget.stan.id,
+                );
+
+                return IconButton(
+                  onPressed: () {
+                    context.read<FavoriteBloc>().add(
+                      ToggleFavorite(
+                        id: widget.stan.id,
+                        namaStan: widget.stan.namaStan,
+                        namaPemilik: widget.stan.namaPemilik,
+                        description: widget.stan.description,
+                        imageUrl: widget.stan.imageUrl,
+                      ),
+                    );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isFavorite
+                              ? '${widget.stan.namaStan} dihapus dari favorit'
+                              : '${widget.stan.namaStan} ditambahkan ke favorit',
+                        ),
+                        backgroundColor: AppTheme.successColor,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: isFavorite ? AppTheme.errorColor : Colors.white,
+                  ),
+                  tooltip: isFavorite
+                      ? 'Hapus dari Favorit'
+                      : 'Tambah ke Favorit',
+                );
+              },
+            ),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
               fit: StackFit.expand,
@@ -191,49 +296,21 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Canteen Name and Rating
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Canteen Name
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.stan.namaStan,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.stan.namaPemilik,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppTheme.textSecondary),
-                          ),
-                        ],
+                    Text(
+                      widget.stan.namaStan,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.star, size: 16, color: Colors.white),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${widget.stan.rating}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.stan.namaPemilik,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                   ],
@@ -448,7 +525,7 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
                         'Rp ${item.harga.toStringAsFixed(0)}',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.green[600],
+                          color: AppTheme.primaryColor,
                         ),
                       ),
                     ],
@@ -467,7 +544,7 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
                                   }
                                 : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[600],
+                              backgroundColor: AppTheme.primaryColor,
                               disabledBackgroundColor: Colors.grey[400],
                               padding: const EdgeInsets.symmetric(vertical: 8),
                             ),
@@ -481,10 +558,10 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
                           )
                         : Container(
                             decoration: BoxDecoration(
-                              color: Colors.green[50],
+                              color: AppTheme.primaryColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Colors.green[600]!,
+                                color: AppTheme.primaryColor,
                                 width: 1,
                               ),
                             ),
@@ -492,9 +569,9 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 IconButton(
-                                  icon: Icon(
+                                  icon: const Icon(
                                     Icons.remove,
-                                    color: Colors.green[600],
+                                    color: AppTheme.primaryColor,
                                     size: 18,
                                   ),
                                   onPressed: () {
@@ -521,14 +598,14 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
                                   '$quantity',
                                   style: Theme.of(context).textTheme.titleSmall
                                       ?.copyWith(
-                                        color: Colors.green[600],
+                                        color: AppTheme.primaryColor,
                                         fontWeight: FontWeight.bold,
                                       ),
                                 ),
                                 IconButton(
-                                  icon: Icon(
+                                  icon: const Icon(
                                     Icons.add,
-                                    color: Colors.green[600],
+                                    color: AppTheme.primaryColor,
                                     size: 18,
                                   ),
                                   onPressed: () {
@@ -604,7 +681,7 @@ class _CanteenDetailScreenState extends State<CanteenDetailScreen> {
                   Text(
                     'Rp${state.cartTotal.toStringAsFixed(0)}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.green[600],
+                      color: AppTheme.primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

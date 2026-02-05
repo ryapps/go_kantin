@@ -155,7 +155,7 @@ class _TransaksiHistoryScreenState extends State<TransaksiHistoryScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      width: 194,
+      width: 204,
       alignment: Alignment.centerLeft,
       child: DropdownButtonFormField<String?>(
         value: effectiveValue,

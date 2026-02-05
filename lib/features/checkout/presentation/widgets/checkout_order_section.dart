@@ -98,7 +98,7 @@ class CheckoutOrderItemCard extends StatelessWidget {
                     Text(
                       'Rp ${item.harga.toStringAsFixed(0)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.green[600],
+                        color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -130,7 +130,7 @@ class CheckoutOrderItemCard extends StatelessWidget {
                     'Rp ${item.totalPrice.toStringAsFixed(0)}',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.green[600],
+                      color: AppTheme.primaryColor,
                     ),
                   ),
                 ],

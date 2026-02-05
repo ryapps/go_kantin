@@ -56,21 +56,25 @@ class CheckoutOrderSummary extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.green[50],
+              color: AppTheme.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green[200]!),
+              border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.local_offer, size: 18, color: Colors.green[600]),
+                    const Icon(
+                      Icons.local_offer,
+                      size: 18,
+                      color: AppTheme.primaryColor,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Diskon',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.green[600],
+                        color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -80,7 +84,7 @@ class CheckoutOrderSummary extends StatelessWidget {
                   '- Rp ${totalDiscount.toStringAsFixed(0)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.green[600],
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],
@@ -100,7 +104,7 @@ class CheckoutOrderSummary extends StatelessWidget {
                 'Rp ${finalTotal.toStringAsFixed(0)}',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[600],
+                  color: AppTheme.primaryColor,
                 ),
               ),
             ],

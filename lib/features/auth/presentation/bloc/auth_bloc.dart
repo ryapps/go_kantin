@@ -21,7 +21,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final GoogleSignInUseCase _googleSignInUseCase;
 
   StreamSubscription? _authStateSubscription;
-  bool _isAdminCreatingCustomer = false; // Flag to track if admin is creating customer
+  bool _isAdminCreatingCustomer =
+      false; // Flag to track if admin is creating customer
+  bool _isRegistering = false; // Flag to track if user is registering
   User? _originalAdminUser; // Store the original admin user
 
   AuthBloc({
@@ -57,17 +59,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     final result = await _getCurrentUserUseCase();
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) {
-        if (user != null) {
-          _originalAdminUser = user; // Store the current user as original admin user
-          emit(Authenticated(user));
-        } else {
-          emit(const Unauthenticated());
-        }
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (user) {
+      if (user != null) {
+        _originalAdminUser =
+            user; // Store the current user as original admin user
+        emit(Authenticated(user));
+      } else {
+        emit(const Unauthenticated());
+      }
+    });
   }
 
   /// Handle login request
@@ -81,15 +81,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       LoginParams(email: event.email, password: event.password),
     );
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) {
-        // Emit authenticated user regardless of role selection
-        // Role validation will be handled in the UI layer
-        _originalAdminUser = user; // Store the current user as original admin user
-        emit(Authenticated(user));
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (user) {
+      // Emit authenticated user regardless of role selection
+      // Role validation will be handled in the UI layer
+      _originalAdminUser =
+          user; // Store the current user as original admin user
+      emit(Authenticated(user));
+    });
   }
 
   /// Handle registration request
@@ -98,6 +96,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(const AuthLoading());
+    _isRegistering = true; // Set flag to prevent auto-redirect
 
     final result = await _registerUseCase(
       RegisterParams(
@@ -108,9 +107,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ),
     );
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) => emit(RegistrationSuccess(user)),
+    await result.fold(
+      (failure) async {
+        _isRegistering = false;
+        emit(AuthError(failure.message));
+      },
+      (user) async {
+        // Logout immediately after registration to prevent auto-login
+        await _logoutUseCase();
+        _isRegistering = false;
+        if (!emit.isDone) {
+          emit(RegistrationSuccess(user));
+        }
+      },
     );
   }
 
@@ -121,15 +130,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
 
+    // Log user role position before logout
+    print('User with role "${event.role}" is logging out');
+
     final result = await _logoutUseCase();
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (_) {
-        _originalAdminUser = null; // Clear the stored admin user
-        return emit(const Unauthenticated());
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (_) {
+      _originalAdminUser = null; // Clear the stored admin user
+      print('User with role "${event.role}" has successfully logged out');
+      return emit(const Unauthenticated());
+    });
   }
 
   /// Subscribe to auth state changes from Firebase
@@ -142,8 +152,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await emit.forEach<User?>(
       _watchAuthStateUseCase(),
       onData: (user) {
-        // If admin is creating customer, ignore the auth state change temporarily
-        if (_isAdminCreatingCustomer) {
+        // If admin is creating customer or user is registering, ignore the auth state change temporarily
+        if (_isAdminCreatingCustomer || _isRegistering) {
           // Don't emit anything, just return the current state
           return state;
         }
@@ -169,13 +179,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       GoogleSignInParams(role: event.role),
     );
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) {
-        _originalAdminUser = user; // Store the current user as original admin user
-        emit(Authenticated(user));
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (user) {
+      _originalAdminUser =
+          user; // Store the current user as original admin user
+      emit(Authenticated(user));
+    });
   }
 
   /// Handle admin starting to create customer

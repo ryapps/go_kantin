@@ -39,6 +39,10 @@ dependencies:
   connectivity_plus: ^5.0.2
   internet_connection_checker: ^1.0.0+1
 
+  # Location
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+
   # Image Handling
   cached_network_image: ^3.3.0
   image_picker: ^1.0.5
@@ -90,3 +94,4 @@ flutter:
 
   assets:
     - assets/logo/
+    - assets/icons/

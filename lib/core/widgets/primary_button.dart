@@ -4,7 +4,7 @@ class PrimaryButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
   final bool isLoading;
-  final IconData? icon;
+  final Widget? icon;
   final Color? backgroundColor;
   final Color? textColor;
 
@@ -28,6 +28,7 @@ class PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: textColor,
+          elevation: 2
         ),
         child: isLoading
             ? const SizedBox(
@@ -42,7 +43,7 @@ class PrimaryButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon),
+                    icon!,
                     const SizedBox(width: 8),
                   ],
                   Text(text),

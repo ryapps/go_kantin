@@ -7,19 +7,20 @@ import '../models/menu_diskon_model.dart';
 
 /// Remote datasource for discount operations
 abstract class DiskonRemoteDatasource {
-  /// Create new discount
+  /// Create new discount for specific canteen
   Future<DiskonModel> createDiskon({
+    required String stanId,
     required String namaDiskon,
     required double persentaseDiskon,
     required DateTime tanggalAwal,
     required DateTime tanggalAkhir,
   });
 
-  /// Get all discounts
-  Future<List<DiskonModel>> getAllDiskon();
-
-  /// Get active/valid discounts only
-  Future<List<DiskonModel>> getActiveDiskon();
+  /// Get all discounts for specific canteen
+  Future<List<DiskonModel>> getDiskonsByStan(
+    String stanId, {
+    bool activeOnly = false,
+  });
 
   /// Get discount by ID
   Future<DiskonModel> getDiskonById(String diskonId);
@@ -32,12 +33,6 @@ abstract class DiskonRemoteDatasource {
     DateTime? tanggalAwal,
     DateTime? tanggalAkhir,
   });
-
-  /// Activate discount
-  Future<void> activateDiskon(String diskonId);
-
-  /// Deactivate discount
-  Future<void> deactivateDiskon(String diskonId);
 
   /// Delete discount
   Future<void> deleteDiskon(String diskonId);
@@ -74,6 +69,7 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
 
   @override
   Future<DiskonModel> createDiskon({
+    required String stanId,
     required String namaDiskon,
     required double persentaseDiskon,
     required DateTime tanggalAwal,
@@ -82,11 +78,11 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
     try {
       final collection = _firestore.collection(AppConstants.diskonCollection);
       final docRef = await collection.add({
+        'stanId': stanId,
         'namaDiskon': namaDiskon,
         'persentaseDiskon': persentaseDiskon,
         'tanggalAwal': Timestamp.fromDate(tanggalAwal),
         'tanggalAkhir': Timestamp.fromDate(tanggalAkhir),
-        'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
       final snapshot = await docRef.get();
@@ -97,37 +93,33 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
   }
 
   @override
-  Future<List<DiskonModel>> getAllDiskon() async {
+  Future<List<DiskonModel>> getDiskonsByStan(
+    String stanId, {
+    bool activeOnly = false,
+  }) async {
     try {
-      final snapshot = await _firestore
+      var query = _firestore
           .collection(AppConstants.diskonCollection)
-          .orderBy('createdAt', descending: true)
-          .get();
-      return snapshot.docs.map(DiskonModel.fromFirestore).toList();
-    } catch (e) {
-      throw ServerException('Gagal mengambil semua diskon: ${e.toString()}');
-    }
-  }
+          .where('stanId', isEqualTo: stanId)
+          .orderBy('createdAt', descending: true);
 
-  @override
-  Future<List<DiskonModel>> getActiveDiskon() async {
-    try {
-      final snapshot = await _firestore
-          .collection(AppConstants.diskonCollection)
-          .where('isActive', isEqualTo: true)
-          .get();
-      final now = DateTime.now();
-      return snapshot.docs
-          .map(DiskonModel.fromFirestore)
-          .where(
-            (model) =>
-                model.isActive &&
-                now.isAfter(model.tanggalAwal.toDate()) &&
-                now.isBefore(model.tanggalAkhir.toDate()),
-          )
-          .toList();
+      final snapshot = await query.get();
+      final diskons = snapshot.docs.map(DiskonModel.fromFirestore).toList();
+
+      if (activeOnly) {
+        final now = DateTime.now();
+        return diskons
+            .where(
+              (d) =>
+                  now.isAfter(d.tanggalAwal.toDate()) &&
+                  now.isBefore(d.tanggalAkhir.toDate()),
+            )
+            .toList();
+      }
+
+      return diskons;
     } catch (e) {
-      throw ServerException('Gagal mengambil diskon aktif: ${e.toString()}');
+      throw ServerException('Gagal mengambil diskon: ${e.toString()}');
     }
   }
 
@@ -189,30 +181,6 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
   }
 
   @override
-  Future<void> activateDiskon(String diskonId) async {
-    try {
-      await _firestore
-          .collection(AppConstants.diskonCollection)
-          .doc(diskonId)
-          .update({'isActive': true});
-    } catch (e) {
-      throw ServerException('Gagal mengaktifkan diskon: ${e.toString()}');
-    }
-  }
-
-  @override
-  Future<void> deactivateDiskon(String diskonId) async {
-    try {
-      await _firestore
-          .collection(AppConstants.diskonCollection)
-          .doc(diskonId)
-          .update({'isActive': false});
-    } catch (e) {
-      throw ServerException('Gagal menonaktifkan diskon: ${e.toString()}');
-    }
-  }
-
-  @override
   Future<void> deleteDiskon(String diskonId) async {
     try {
       await _firestore
@@ -224,7 +192,9 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
     }
   }
 
-  @override
+  // Menu-Diskon junction operations
+
+  /// Link discount to menu items
   Future<void> linkDiskonToMenu({
     required String diskonId,
     required List<String> menuIds,
@@ -236,9 +206,12 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
       final batch = _firestore.batch();
 
       for (final menuId in menuIds) {
-        final docId = '${menuId}_$diskonId';
-        final docRef = collection.doc(docId);
-        batch.set(docRef, {'menuId': menuId, 'diskonId': diskonId});
+        final docRef = collection.doc();
+        batch.set(docRef, {
+          'menuId': menuId,
+          'diskonId': diskonId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
 
       await batch.commit();
@@ -249,7 +222,7 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
     }
   }
 
-  @override
+  /// Unlink discount from menu items
   Future<void> unlinkDiskonFromMenu({
     required String diskonId,
     required List<String> menuIds,
@@ -258,14 +231,17 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
       final collection = _firestore.collection(
         AppConstants.menuDiskonCollection,
       );
-      final batch = _firestore.batch();
 
       for (final menuId in menuIds) {
-        final docId = '${menuId}_$diskonId';
-        batch.delete(collection.doc(docId));
-      }
+        final snapshot = await collection
+            .where('menuId', isEqualTo: menuId)
+            .where('diskonId', isEqualTo: diskonId)
+            .get();
 
-      await batch.commit();
+        for (final doc in snapshot.docs) {
+          await doc.reference.delete();
+        }
+      }
     } catch (e) {
       throw ServerException(
         'Gagal memutus hubungan diskon dari menu: ${e.toString()}',
@@ -273,7 +249,7 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
     }
   }
 
-  @override
+  /// Get menu IDs that have a discount
   Future<List<String>> getMenuIdsWithDiskon(String diskonId) async {
     try {
       final snapshot = await _firestore
@@ -291,7 +267,7 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
     }
   }
 
-  @override
+  /// Get discount for a menu item (if any)
   Future<DiskonModel?> getDiskonForMenu(String menuId) async {
     try {
       final linkSnapshot = await _firestore
@@ -325,7 +301,7 @@ class DiskonRemoteDatasourceImpl implements DiskonRemoteDatasource {
     }
   }
 
-  @override
+  /// Get all active discounts for a menu item
   Future<List<DiskonModel>> getActiveDiscountsForMenu(String menuId) async {
     try {
       final linkSnapshot = await _firestore

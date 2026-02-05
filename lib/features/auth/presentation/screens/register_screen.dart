@@ -48,7 +48,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String? _validateConfirmPassword(String? value) {
     if (value == null || value.isEmpty) {
-      return ErrorMessages.fieldRequired;
+      return Validators.validateRequired(
+        value,
+        fieldName: 'Konfirmasi Password',
+      );
     }
     if (value != _passwordController.text) {
       return 'Password tidak cocok';
@@ -88,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           } else if (state is RegistrationSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Registrasi berhasil!'),
+                content: const Text('Registrasi berhasil! Silakan login'),
                 backgroundColor: Colors.green,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
@@ -97,12 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             );
 
-            // Navigate to profile completion based on role
-            if (state.user.isSiswa) {
-              context.go('/complete-siswa-profile');
-            } else if (state.user.isAdminStan) {
-              context.go('/complete-stan-profile');
-            }
+            context.go('/login', extra: state.user.role);
           }
         },
         builder: (context, state) {
@@ -204,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           },
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
 
                       // Register Button
@@ -212,7 +210,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         text: 'Daftar',
                         onPressed: _handleRegister,
                         isLoading: isLoading,
-                        icon: Icons.person_add,
                       ),
                       const SizedBox(height: 24),
                       Align(
@@ -224,10 +221,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             children: [
                               WidgetSpan(
                                 child: GestureDetector(
-                                  onTap: isLoading ? null : () => context.push(
-                                    '/login',
-                                    extra: _selectedRole,
-                                  ),
+                                  onTap: isLoading
+                                      ? null
+                                      : () => context.push(
+                                          '/login',
+                                          extra: _selectedRole,
+                                        ),
                                   child: Text(
                                     'Login',
                                     style: TextStyle(

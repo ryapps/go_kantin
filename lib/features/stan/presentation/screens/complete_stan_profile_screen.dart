@@ -1,13 +1,18 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kantin_app/core/di/injection_container.dart';
 import 'package:kantin_app/core/theme/app_theme.dart';
 import 'package:kantin_app/core/widgets/custom_textfield.dart';
 import 'package:kantin_app/core/widgets/primary_button.dart';
 import 'package:kantin_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kantin_app/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kantin_app/features/category/domain/entities/category.dart';
+import 'package:kantin_app/features/category/domain/usecases/get_all_categories_usecase.dart';
 import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_bloc.dart';
 import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_event.dart';
 import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_state.dart';
@@ -16,7 +21,8 @@ class CompleteStanProfileScreen extends StatefulWidget {
   const CompleteStanProfileScreen({super.key});
 
   @override
-  State<CompleteStanProfileScreen> createState() => _CompleteStanProfileScreenState();
+  State<CompleteStanProfileScreen> createState() =>
+      _CompleteStanProfileScreenState();
 }
 
 class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
@@ -25,12 +31,73 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
   final _namaPemilikController = TextEditingController();
   final _telpController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
   final _openTimeController = TextEditingController();
   final _closeTimeController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _categoriesController = TextEditingController();
 
-  String? _pickedImagePath;
+  XFile? _pickedImage;
+  final List<String> _selectedCategories = [];
+  TimeOfDay? _openTime;
+  TimeOfDay? _closeTime;
+  List<Category> _categories = [];
+  bool _isLoadingCategories = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+    _checkExistingProfile();
+  }
+
+  void _checkExistingProfile() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is Authenticated) {
+      // Check if profile already exists
+      context.read<StanProfileCompletionBloc>().add(
+        CheckStanProfileRequested(userId: authState.user.id),
+      );
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final getAllCategoriesUseCase = sl<GetAllCategoriesUseCase>();
+      final result = await getAllCategoriesUseCase();
+
+      result.fold(
+        (failure) {
+          if (mounted) {
+            setState(() {
+              _isLoadingCategories = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Gagal memuat kategori: ${failure.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        (categories) {
+          if (mounted) {
+            setState(() {
+              _categories = categories.where((c) => c.isActive).toList();
+              _isLoadingCategories = false;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCategories = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -38,15 +105,47 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
     _namaPemilikController.dispose();
     _telpController.dispose();
     _descriptionController.dispose();
+    _locationController.dispose();
     _openTimeController.dispose();
     _closeTimeController.dispose();
-    _locationController.dispose();
-    _categoriesController.dispose();
     super.dispose();
   }
 
   void _handleSaveProfile() {
     if (_formKey.currentState!.validate()) {
+      // if (_selectedCategories.isEmpty) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     const SnackBar(
+      //       content: Text('Pilih minimal 1 kategori'),
+      //       backgroundColor: Colors.red,
+      //       behavior: SnackBarBehavior.floating,
+      //     ),
+      //   );
+      //   return;
+      // }
+
+      if (_openTime == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Jam buka wajib diisi'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      if (_closeTime == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Jam tutup wajib diisi'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
       // Get current user ID from the auth state
       String userId = '';
       final authState = context.read<AuthBloc>().state;
@@ -60,11 +159,11 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
         'namaPemilik': _namaPemilikController.text.trim(),
         'telp': _telpController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'openTime': _openTimeController.text.trim(),
-        'closeTime': _closeTimeController.text.trim(),
+        'openTime': _formatTimeOfDay(_openTime!),
+        'closeTime': _formatTimeOfDay(_closeTime!),
         'location': _locationController.text.trim(),
-        'categories': _categoriesController.text.trim().split(',').map((e) => e.trim()).toList(),
-        'imagePath': _pickedImagePath, // Include image path if available
+        'categories': _selectedCategories,
+        'imagePath': _pickedImage?.path,
       };
 
       context.read<StanProfileCompletionBloc>().add(
@@ -84,7 +183,69 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
 
     if (pickedFile != null) {
       setState(() {
-        _pickedImagePath = pickedFile.path;
+        _pickedImage = pickedFile;
+      });
+    }
+  }
+
+  Widget _buildProfileImage() {
+    if (_pickedImage == null) {
+      return const Icon(Icons.store, size: 60, color: AppTheme.textSecondary);
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: kIsWeb
+          ? FutureBuilder<Uint8List>(
+              future: _pickedImage!.readAsBytes(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return Image.memory(snapshot.data!, fit: BoxFit.cover);
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            )
+          : Image.file(File(_pickedImage!.path), fit: BoxFit.cover),
+    );
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  Future<void> _selectTime(BuildContext context, bool isOpenTime) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: (isOpenTime ? _openTime : _closeTime) ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Colors.white,
+              hourMinuteShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              dayPeriodShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isOpenTime) {
+          _openTime = picked;
+          _openTimeController.text = _formatTimeOfDay(picked);
+        } else {
+          _closeTime = picked;
+          _closeTimeController.text = _formatTimeOfDay(picked);
+        }
       });
     }
   }
@@ -92,14 +253,11 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lengkapi Profil Stan'),
-      ),
+      appBar: AppBar(title: const Text('Lengkapi Profil Stan')),
       body: MultiBlocListener(
         listeners: [
           BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
-              // If user is not authenticated, redirect to login
               if (state is Unauthenticated) {
                 context.go('/login');
               }
@@ -108,18 +266,28 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
           BlocListener<StanProfileCompletionBloc, StanProfileCompletionState>(
             listener: (context, state) {
               if (state is StanProfileSavedSuccessfully) {
-                // Get current user to determine navigation based on role
+                // Profile already exists or just saved, redirect to dashboard
                 final authState = context.read<AuthBloc>().state;
                 if (authState is Authenticated) {
-                  if (authState.user.isSiswa) {
-                    context.go('/siswa-home');
-                  } else if (authState.user.isAdminStan) {
+                  if (authState.user.isAdminStan) {
                     context.go('/admin');
+                  } else if (authState.user.isSiswa) {
+                    context.go('/siswa-home');
                   } else if (authState.user.isSuperAdmin) {
                     context.go('/admin');
                   }
                 }
               } else if (state is StanProfileCompletionError) {
+                // Only show error if not from initial check
+                // Error from initial check means profile doesn't exist yet (expected)
+                if (state.message.contains('tidak ditemukan') ||
+                    state.message.contains('belum')) {
+                  // Profile doesn't exist, stay on this screen to fill it
+                  // Don't show error snackbar for this case
+                  return;
+                }
+
+                // Show error for other cases (save failed, etc)
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(state.message),
@@ -145,13 +313,11 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                 child: ListView(
                   children: [
                     const SizedBox(height: 24),
-
-                    // Description
                     Text(
                       'Silakan lengkapi profil stan Anda untuk memulai menggunakan aplikasi',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
@@ -171,19 +337,7 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                                 width: 2,
                               ),
                             ),
-                            child: _pickedImagePath != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Image.file(
-                                      File(_pickedImagePath!),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.store,
-                                    size: 60,
-                                    color: AppTheme.textSecondary,
-                                  ),
+                            child: _buildProfileImage(),
                           ),
                           Positioned(
                             bottom: 0,
@@ -208,7 +362,7 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Nama Stan Field
+                    // Nama Stan
                     CustomTextField(
                       controller: _namaStanController,
                       label: 'Nama Stan',
@@ -224,7 +378,7 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Nama Pemilik Field
+                    // Nama Pemilik
                     CustomTextField(
                       controller: _namaPemilikController,
                       label: 'Nama Pemilik',
@@ -240,7 +394,7 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Telepon Field
+                    // Telepon
                     CustomTextField(
                       controller: _telpController,
                       label: 'Nomor Telepon',
@@ -251,8 +405,8 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Nomor telepon wajib diisi';
                         }
-                        if (!RegExp(r'^[\+]?[1-9][\d]{0,15}$').hasMatch(value)) {
-                          return 'Nomor telepon tidak valid';
+                        if (!RegExp(r'^\+?[0-9]{10,16}$').hasMatch(value)) {
+                          return 'Nomor telepon tidak valid (10-16 digit)';
                         }
                         return null;
                       },
@@ -260,13 +414,14 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Deskripsi Field
+                    // Deskripsi
                     CustomTextField(
                       controller: _descriptionController,
                       label: 'Deskripsi Stan',
                       hint: 'Deskripsikan tentang stan Anda',
                       prefixIcon: Icons.description_outlined,
                       maxLines: 3,
+                      minLines: 3,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Deskripsi stan wajib diisi';
@@ -277,45 +432,91 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Jam Buka Field
-                    CustomTextField(
-                      controller: _openTimeController,
-                      label: 'Jam Buka',
-                      hint: 'Contoh: 07:00',
-                      prefixIcon: Icons.access_time_outlined,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Jam buka wajib diisi';
-                        }
-                        if (!RegExp(r'^([01]?[0-9]|2[0-3]):[0-5][0-9]$').hasMatch(value)) {
-                          return 'Format jam tidak valid (HH:MM)';
-                        }
-                        return null;
-                      },
-                      enabled: !isLoading,
+                    // Jam Buka (Time Picker)
+                    InkWell(
+                      onTap: isLoading
+                          ? null
+                          : () => _selectTime(context, true),
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          controller: _openTimeController,
+                          readOnly: true,
+                          style: const TextStyle(color: Colors.black),
+                          decoration: InputDecoration(
+                            labelText: 'Jam Buka',
+                            hintText: 'Pilih jam buka',
+                            alignLabelWithHint: true,
+                            prefixIcon: const Icon(
+                              Icons.access_time_outlined,
+                              color: AppTheme.textSecondary,
+                            ),
+                            suffixIcon: const Icon(
+                              Icons.schedule,
+                              color: AppTheme.primaryColor,
+                            ),
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 12,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Jam Tutup Field
-                    CustomTextField(
-                      controller: _closeTimeController,
-                      label: 'Jam Tutup',
-                      hint: 'Contoh: 17:00',
-                      prefixIcon: Icons.access_time_outlined,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Jam tutup wajib diisi';
-                        }
-                        if (!RegExp(r'^([01]?[0-9]|2[0-3]):[0-5][0-9]$').hasMatch(value)) {
-                          return 'Format jam tidak valid (HH:MM)';
-                        }
-                        return null;
-                      },
-                      enabled: !isLoading,
+                    // Jam Tutup (Time Picker)
+                    InkWell(
+                      onTap: isLoading
+                          ? null
+                          : () => _selectTime(context, false),
+                      child: AbsorbPointer(
+                        child: TextFormField(
+                          controller: _closeTimeController,
+                          readOnly: true,
+                          style: const TextStyle(color: Colors.black),
+                          decoration: InputDecoration(
+                            labelText: 'Jam Tutup',
+                            hintText: 'Pilih jam tutup',
+                            alignLabelWithHint: true,
+                            prefixIcon: const Icon(
+                              Icons.access_time_outlined,
+                              color: AppTheme.textSecondary,
+                            ),
+                            suffixIcon: const Icon(
+                              Icons.schedule,
+                              color: AppTheme.primaryColor,
+                            ),
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 12,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Lokasi Field
+                    // Lokasi
                     CustomTextField(
                       controller: _locationController,
                       label: 'Lokasi Stan',
@@ -331,28 +532,137 @@ class _CompleteStanProfileScreenState extends State<CompleteStanProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Kategori Field (comma-separated)
-                    CustomTextField(
-                      controller: _categoriesController,
-                      label: 'Kategori Makanan',
-                      hint: 'Contoh: Makanan Berat, Minuman, Camilan',
-                      prefixIcon: Icons.category_outlined,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Kategori wajib diisi';
-                        }
-                        return null;
-                      },
-                      enabled: !isLoading,
+                    // Kategori (Multiple selection with chips)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.category_outlined,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Kategori Makanan',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w500),
+                            ),
+                            if (_isLoadingCategories) ...[
+                              const SizedBox(width: 8),
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppTheme.borderColor),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: _isLoadingCategories
+                              ? const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(20),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : _categories.isEmpty
+                              ? Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      children: [
+                                        const Icon(
+                                          Icons.category_outlined,
+                                          size: 48,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Belum ada kategori tersedia',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: AppTheme.textSecondary,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        TextButton.icon(
+                                          onPressed: _loadCategories,
+                                          icon: const Icon(Icons.refresh),
+                                          label: const Text('Muat Ulang'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _categories.map((category) {
+                                    // Cek berdasarkan category.id, bukan category.name
+                                    final isSelected = _selectedCategories
+                                        .contains(category.id);
+                                    return FilterChip(
+                                      label: Text(category.name),
+                                      selected: isSelected,
+                                      onSelected: isLoading
+                                          ? null
+                                          : (selected) {
+                                              setState(() {
+                                                if (selected) {
+                                                  // Simpan category.id, bukan category.name
+                                                  _selectedCategories.add(
+                                                    category.id,
+                                                  );
+                                                } else {
+                                                  _selectedCategories.remove(
+                                                    category.id,
+                                                  );
+                                                }
+                                              });
+                                            },
+                                      selectedColor: AppTheme.primaryColor
+                                          .withOpacity(0.2),
+                                      checkmarkColor: AppTheme.primaryColor,
+                                      labelStyle: TextStyle(
+                                        color: isSelected
+                                            ? AppTheme.primaryColor
+                                            : AppTheme.textSecondary,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                        ),
+                        if (_selectedCategories.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '${_selectedCategories.length} kategori dipilih',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppTheme.primaryColor),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 32),
 
-                    // Save Button
+                    // Submit Button
                     PrimaryButton(
                       text: 'Simpan Profil',
                       onPressed: _handleSaveProfile,
                       isLoading: isLoading,
-                      icon: Icons.save,
                     ),
                     const SizedBox(height: 24),
                   ],

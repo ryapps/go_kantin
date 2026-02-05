@@ -1,4 +1,4 @@
-import 'package:kantin_app/features/diskon/domain/repositories/i_diskon_repository.dart';
+import 'package:kantin_app/features/diskon/domain/repositories/i_diskon_repository_new.dart';
 
 /// Helper class untuk menghitung diskon pada checkout
 class CheckoutDiscountHelper {
@@ -27,9 +27,9 @@ class CheckoutDiscountHelper {
   }
 
   /// Ambil semua diskon aktif untuk item
-  Future<List<double>> getActiveDiscountsForItem(String menuId) async {
+  Future<List<double>> getActiveDiscountsForItem(String stanId) async {
     try {
-      final result = await _diskonRepository.getActiveDiscountsForMenu(menuId);
+      final result = await _diskonRepository.getActiveDiskonsByStan(stanId);
 
       return result.fold(
         (failure) => [],

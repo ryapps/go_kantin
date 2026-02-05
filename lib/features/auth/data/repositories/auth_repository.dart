@@ -31,6 +31,7 @@ class AuthRepository implements IAuthRepository {
     } on firebase_auth.FirebaseAuthException catch (e) {
       return Left(AuthFailure(_mapFirebaseError(e.code)));
     } catch (e) {
+      print(e);
       return Left(AuthFailure('Terjadi kesalahan: ${e.toString()}'));
     }
   }

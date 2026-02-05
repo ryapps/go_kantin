@@ -3,16 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kantin_app/core/di/injection_container.dart';
 import 'package:kantin_app/features/admin/presentation/screens/admin_dashboard_screen.dart';
-import 'package:kantin_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kantin_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/register_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/role_selector_screen.dart';
 import 'package:kantin_app/features/auth/presentation/screens/splash_screen.dart';
 import 'package:kantin_app/features/checkout/presentation/bloc/checkout_bloc.dart';
 import 'package:kantin_app/features/checkout/presentation/screens/checkout_screen.dart';
+import 'package:kantin_app/features/favorite/presentation/bloc/favorite_bloc.dart';
+import 'package:kantin_app/features/favorite/presentation/screens/favorite_screen.dart';
 import 'package:kantin_app/features/home/presentation/screens/siswa_home_screen.dart';
+import 'package:kantin_app/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:kantin_app/features/profile/presentation/screens/profile_screen.dart';
+import 'package:kantin_app/features/stan/presentation/bloc/all_canteens_bloc.dart';
 import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_bloc.dart';
+import 'package:kantin_app/features/stan/presentation/screens/all_canteens_screen.dart';
 import 'package:kantin_app/features/stan/presentation/screens/complete_stan_profile_screen.dart';
 import 'package:kantin_app/features/transaksi/presentation/bloc/order_tracking_bloc.dart';
 import 'package:kantin_app/features/transaksi/presentation/bloc/transaksi_history_bloc.dart';
@@ -28,11 +32,20 @@ class AppRouter {
       // Auth Routes
       GoRoute(
         path: '/login',
-        builder: (context, state) =>
-            BlocProvider(
-              create: (context) => sl<StanProfileCompletionBloc>(),
-              child: LoginScreen(selectedRole: state.extra as String?),
-            ),
+        builder: (context, state) => BlocProvider(
+          create: (context) => sl<StanProfileCompletionBloc>(),
+          child: LoginScreen(selectedRole: state.extra as String?),
+        ),
+      ),
+      GoRoute(
+        path: '/login/:role',
+        builder: (context, state) {
+          final role = state.pathParameters['role'];
+          return BlocProvider(
+            create: (context) => sl<StanProfileCompletionBloc>(),
+            child: LoginScreen(selectedRole: role),
+          );
+        },
       ),
       GoRoute(
         path: '/register',
@@ -58,15 +71,24 @@ class AppRouter {
       ),
       GoRoute(
         path: '/favorites',
-        builder: (context, state) => const PlaceholderScreen(
-          title: 'Favorit',
-          message: 'Daftar favorit akan diimplementasikan di fase berikutnya',
-          icon: Icons.favorite_outline,
+        builder: (context, state) => BlocProvider(
+          create: (context) => sl<FavoriteBloc>(),
+          child: const FavoriteScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/all-canteens',
+        builder: (context, state) => BlocProvider(
+          create: (context) => sl<AllCanteensBloc>(),
+          child: const AllCanteensScreen(),
         ),
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) => BlocProvider(
+          create: (context) => sl<ProfileBloc>(),
+          child: const ProfileScreen(),
+        ),
       ),
       GoRoute(
         path: '/checkout',

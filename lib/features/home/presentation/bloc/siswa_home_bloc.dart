@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kantin_app/core/services/location_service.dart';
 import 'package:kantin_app/features/category/domain/entities/category.dart';
+import 'package:kantin_app/features/category/domain/usecases/get_all_categories_usecase.dart';
 import 'package:kantin_app/features/home/presentation/bloc/siswa_home_event.dart';
 import 'package:kantin_app/features/home/presentation/bloc/siswa_home_state.dart';
 import 'package:kantin_app/features/stan/domain/entities/stan.dart';
@@ -7,13 +9,19 @@ import 'package:kantin_app/features/stan/domain/usecases/get_all_stans_usecase.d
 
 class SiswaHomeBloc extends Bloc<SiswaHomeEvent, SiswaHomeState> {
   final GetAllStansUseCase getAllStansUseCase;
+  final GetAllCategoriesUseCase getAllCategoriesUseCase;
+  final LocationService locationService;
 
-  SiswaHomeBloc({required this.getAllStansUseCase})
-    : super(const SiswaHomeInitial()) {
+  SiswaHomeBloc({
+    required this.getAllStansUseCase,
+    required this.getAllCategoriesUseCase,
+    required this.locationService,
+  }) : super(const SiswaHomeInitial()) {
     on<LoadHomeEvent>(_onLoadHome);
     on<RefreshStallsEvent>(_onRefreshStalls);
     on<SelectCategoryEvent>(_onSelectCategory);
     on<ChangeBottomNavEvent>(_onChangeBottomNav);
+    on<LoadLocationEvent>(_onLoadLocation);
   }
 
   Future<void> _onLoadHome(
@@ -23,8 +31,16 @@ class SiswaHomeBloc extends Bloc<SiswaHomeEvent, SiswaHomeState> {
     emit(const SiswaHomeLoading());
 
     try {
-      final result = await getAllStansUseCase();
-      final allStalls = result.fold(
+      // Load categories from database
+      final categoriesResult = await getAllCategoriesUseCase();
+      final categories = categoriesResult.fold(
+        (failure) => <Category>[],
+        (cats) => cats,
+      );
+
+      // Load stalls
+      final stallsResult = await getAllStansUseCase();
+      final allStalls = stallsResult.fold(
         (failure) => throw Exception(failure.message),
         (stalls) => stalls,
       );
@@ -34,17 +50,21 @@ class SiswaHomeBloc extends Bloc<SiswaHomeEvent, SiswaHomeState> {
         return;
       }
 
-      // Filter by default category
-      final filteredStalls = _filterStallsByCategory(allStalls, 'aneka_nasi');
+      // Tidak ada kategori yang selected di awal (empty string)
+      // Agar user tidak bingung dan bisa memilih kategori sendiri
+      const defaultCategoryId = '';
+      final filteredStalls = allStalls; // Tampilkan semua kantin di awal
 
       emit(
         SiswaHomeLoaded(
           allStalls: allStalls,
           filteredStalls: filteredStalls,
-          selectedCategoryId: 'aneka_nasi',
+          categories: categories,
+          selectedCategoryId: defaultCategoryId,
         ),
       );
     } catch (e) {
+      print('Error loading home: $e');
       emit(SiswaHomeError('Failed to load stalls: ${e.toString()}'));
     }
   }
@@ -72,17 +92,20 @@ class SiswaHomeBloc extends Bloc<SiswaHomeEvent, SiswaHomeState> {
       final currentState = state;
       final selectedCategoryId = currentState is SiswaHomeLoaded
           ? currentState.selectedCategoryId
-          : 'aneka_nasi';
+          : '';
+      final categories = currentState is SiswaHomeLoaded
+          ? currentState.categories
+          : <Category>[];
 
-      final filteredStalls = _filterStallsByCategory(
-        allStalls,
-        selectedCategoryId,
-      );
+      final filteredStalls = selectedCategoryId.isNotEmpty
+          ? _filterStallsByCategory(allStalls, selectedCategoryId)
+          : allStalls;
 
       emit(
         SiswaHomeLoaded(
           allStalls: allStalls,
           filteredStalls: filteredStalls,
+          categories: categories,
           selectedCategoryId: selectedCategoryId,
         ),
       );
@@ -122,13 +145,49 @@ class SiswaHomeBloc extends Bloc<SiswaHomeEvent, SiswaHomeState> {
   }
 
   List<Stan> _filterStallsByCategory(List<Stan> stalls, String categoryId) {
-    final selectedCategory = Category.all.firstWhere(
-      (cat) => cat.id == categoryId,
-      orElse: () => Category.anekaNasi,
-    );
-
     return stalls.where((stall) {
-      return stall.categories.any((cat) => cat == selectedCategory.id);
+      return stall.categories.any((cat) => cat == categoryId);
     }).toList();
+  }
+
+  Future<void> _onLoadLocation(
+    LoadLocationEvent event,
+    Emitter<SiswaHomeState> emit,
+  ) async {
+    if (state is SiswaHomeLoaded) {
+      final currentState = state as SiswaHomeLoaded;
+
+      try {
+        print('Bloc: Loading location...');
+        final locationDetails = await locationService
+            .getCurrentLocationDetails();
+
+        print(
+          'Bloc: Location details received: ${locationDetails['city']} - ${locationDetails['address']}',
+        );
+
+        emit(
+          currentState.copyWith(
+            city: locationDetails['city'] ?? 'Lokasi',
+            address: locationDetails['address'] ?? 'Alamat tidak tersedia',
+          ),
+        );
+
+        print('Bloc: State emitted with new location');
+      } catch (e) {
+        print('Bloc: Error loading location: $e');
+        // Keep current state if location fetch fails
+        emit(
+          currentState.copyWith(
+            city: 'Lokasi tidak tersedia',
+            address: 'Aktifkan lokasi untuk melihat alamat',
+          ),
+        );
+      }
+    } else {
+      print(
+        'Bloc: State is not SiswaHomeLoaded, current state: ${state.runtimeType}',
+      );
+    }
   }
 }

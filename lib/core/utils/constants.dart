@@ -14,6 +14,7 @@ class AppConstants {
   static const String menuDiskonCollection = 'menu_diskon';
   static const String customerCollection = 'customer';
   static const String dashboardCollection = 'dashboard';
+  static const String categoriesCollection = 'categories';
 
   // Firebase Storage Paths
   static const String profileImagesPath = 'profile_images';
@@ -39,6 +40,20 @@ class AppConstants {
   // Menu Jenis
   static const String jenisMakanan = 'makanan';
   static const String jenisMinuman = 'minuman';
+
+  // Kategori Kantin/Stan
+  static const List<String> kategoriKantin = [
+    'Makanan Berat',
+    'Makanan Ringan',
+    'Minuman',
+    'Camilan',
+    'Dessert',
+    'Makanan Tradisional',
+    'Makanan Modern',
+    'Bakery',
+    'Street Food',
+    'Healthy Food',
+  ];
 
   // Business Rules
   static const int dailyOrderLimit = 100;
@@ -86,7 +101,7 @@ class ErrorMessages {
   static const String stanClosed = 'Stan tutup';
 
   // Validation Errors
-  static const String fieldRequired = 'Field ini wajib diisi';
+  static const String fieldRequired = 'wajib diisi';
   static const String invalidPhoneNumber = 'Nomor telepon tidak valid';
   static const String invalidPrice = 'Harga harus lebih dari 0';
   static const String imageRequired = 'Gambar wajib diunggah';

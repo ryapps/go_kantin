@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kantin_app/core/theme/app_theme.dart';
 import 'package:kantin_app/core/widgets/app_bottom_nav.dart';
 import 'package:kantin_app/core/widgets/custom_textfield.dart';
-import 'package:kantin_app/features/category/domain/entities/category.dart';
 import 'package:kantin_app/features/home/presentation/bloc/siswa_home_bloc.dart';
 import 'package:kantin_app/features/home/presentation/bloc/siswa_home_event.dart';
 import 'package:kantin_app/features/home/presentation/bloc/siswa_home_state.dart';
+import 'package:kantin_app/features/home/presentation/screens/category_canteens_screen.dart';
 import 'package:kantin_app/features/stan/presentation/screens/canteen_detail_screen.dart';
 
 import '../widgets/food_category_grid.dart';
@@ -22,6 +23,7 @@ class SiswaHomeScreen extends StatefulWidget {
 
 class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
   final searchController = TextEditingController();
+  bool _locationLoaded = false;
 
   @override
   void initState() {
@@ -43,34 +45,56 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
         backgroundColor: AppTheme.backgroundColor,
         foregroundColor: AppTheme.textPrimary,
         centerTitle: false,
-        title: Row(
-          children: [
-            CircleAvatar(radius: 20, child: Icon(Icons.location_pin, size: 24)),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        title: BlocBuilder<SiswaHomeBloc, SiswaHomeState>(
+          builder: (context, state) {
+            String city = 'Lokasi';
+            String address = 'Memuat lokasi...';
+
+            if (state is SiswaHomeLoaded) {
+              city = state.city;
+              address = state.address;
+            }
+
+            return Row(
               children: [
-                Text(
-                  'Miami',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppTheme.textSecondary,
-                    fontSize: 12,
-                  ),
+                const CircleAvatar(
+                  radius: 20,
+                  child: Icon(Icons.location_pin, size: 24),
                 ),
-                Text(
-                  'Sea Beach of beside',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        city,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        address,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: AppTheme.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
-        actions: [
+        actions: const [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Center(
               child: Icon(
                 Icons.notifications_none,
@@ -103,13 +127,11 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
           }
 
           if (state is SiswaHomeError) {
-            print(state.message);
-
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(state.message),
                   const SizedBox(height: 16),
@@ -128,6 +150,18 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
             final trendingStalls = List.of(state.allStalls)
               ..sort((a, b) => b.rating.compareTo(a.rating));
             final trendingItems = trendingStalls.take(4).toList();
+
+            // Load location once when state becomes SiswaHomeLoaded
+            if (!_locationLoaded) {
+              _locationLoaded = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  print('Screen: Triggering LoadLocationEvent');
+                  context.read<SiswaHomeBloc>().add(const LoadLocationEvent());
+                }
+              });
+            }
+
             return SafeArea(
               child: RefreshIndicator(
                 onRefresh: () async {
@@ -148,11 +182,31 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
                       ),
                       // Food Type Grid
                       FoodCategoryGrid(
-                        categories: Category.all,
+                        categories: state.categories,
                         selectedCategoryId: state.selectedCategoryId,
                         onCategorySelected: (categoryId) {
-                          context.read<SiswaHomeBloc>().add(
-                            SelectCategoryEvent(categoryId),
+                          // Cari kategori yang dipilih
+                          final selectedCategory = state.categories.firstWhere(
+                            (cat) => cat.id == categoryId,
+                          );
+
+                          // Filter kantin berdasarkan kategori
+                          final filteredCanteens = state.allStalls.where((
+                            stan,
+                          ) {
+                            return stan.categories.contains(categoryId);
+                          }).toList();
+
+                          // Navigasi ke halaman baru
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CategoryCanteensScreen(
+                                category: selectedCategory,
+                                canteens: filteredCanteens,
+                                allCategories: state.categories,
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -176,8 +230,8 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
                         child: OfferBanner(),
                       ),
 
@@ -201,13 +255,26 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium
-                                          ?.copyWith(fontWeight: FontWeight.bold),
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                   ],
                                 ),
-                                Text(
-                                  'See All',
-                                  style: Theme.of(context).textTheme.labelMedium,
+                                GestureDetector(
+                                  onTap: () {
+                                    context.push('/all-canteens');
+                                  },
+                                  child: Text(
+                                    'See All',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context).primaryColor,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -216,7 +283,7 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
-                        height: 250,
+                        height: 144,
                         child: PageView(
                           children: [
                             ...state.allStalls.map(
@@ -261,30 +328,18 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium
-                                          ?.copyWith(fontWeight: FontWeight.bold),
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.timer,
-                                          size: 16,
-                                          color: Colors.grey,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '3.1 mins',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.labelSmall,
-                                        ),
-                                      ],
-                                    ),
+                                    
                                   ],
                                 ),
                                 Text(
                                   'See All',
-                                  style: Theme.of(context).textTheme.labelMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.labelMedium,
                                 ),
                               ],
                             ),
@@ -293,7 +348,7 @@ class _SiswaHomeScreenState extends State<SiswaHomeScreen> {
                       ),
                       const SizedBox(height: 12),
                       SizedBox(
-                        height: 250,
+                        height: 144,
                         child: PageView(
                           children: [
                             ...trendingItems.map(

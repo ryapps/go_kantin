@@ -1,21 +1,22 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
+import 'package:kantin_app/features/diskon/domain/entities/diskon.dart';
+import 'package:kantin_app/features/diskon/domain/repositories/i_diskon_repository_new.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../entities/menu_diskon.dart';
-import '../repositories/i_diskon_repository.dart';
 
 /// Use case for fetching active discounts for a menu
-class GetActiveDiscountsForMenuUseCase
+class GetActiveDiskonsByStanUseCase
     implements UseCase<List<Diskon>, MenuDiscountParams> {
   final IDiskonRepository repository;
 
-  GetActiveDiscountsForMenuUseCase(this.repository);
+  GetActiveDiskonsByStanUseCase(this.repository);
 
   @override
   Future<Either<Failure, List<Diskon>>> call(MenuDiscountParams params) async {
-    return repository.getActiveDiscountsForMenu(params.menuId);
+    return repository.getActiveDiskonsByStan(params.menuId);
   }
 }
 

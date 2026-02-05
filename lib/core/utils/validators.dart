@@ -4,7 +4,7 @@ class Validators {
   // Email validation
   static String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return ErrorMessages.fieldRequired;
+      return validateRequired(value, fieldName: 'Email');
     }
     
     final emailRegex = RegExp(
@@ -21,7 +21,7 @@ class Validators {
   // Password validation
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
-      return ErrorMessages.fieldRequired;
+      return validateRequired(value, fieldName: 'Password');
     }
     
     if (value.length < AppConstants.minPasswordLength) {
@@ -60,7 +60,7 @@ class Validators {
   // Phone number validation
   static String? validatePhone(String? value) {
     if (value == null || value.isEmpty) {
-      return ErrorMessages.fieldRequired;
+      return validateRequired(value, fieldName: 'Nomor Telepon');
     }
     
     // Remove spaces and dashes
@@ -84,7 +84,7 @@ class Validators {
   // Price validation (must be > 0)
   static String? validatePrice(String? value) {
     if (value == null || value.isEmpty) {
-      return ErrorMessages.fieldRequired;
+      return validateRequired(value, fieldName: 'Harga');
     }
     
     final price = double.tryParse(value);

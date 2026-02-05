@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kantin_app/core/theme/app_theme.dart';
+import 'package:kantin_app/core/utils/constants.dart';
 import 'package:kantin_app/core/widgets/custom_textfield.dart';
 import 'package:kantin_app/core/widgets/primary_button.dart';
 import 'package:kantin_app/features/stan/presentation/bloc/stan_profile_completion_bloc.dart';
@@ -78,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       backgroundColor: Colors.red,
                     ),
                   );
-                  context.read<AuthBloc>().add(LogoutRequested());
+                  context.read<AuthBloc>().add(LogoutRequested(role: 'siswa'));
 
                   context.go('/select-role');
                 } else {
@@ -142,12 +143,83 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         const SizedBox(height: 40),
-                        Text(
-                          'Selamat Datang👋',
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Selamat Datang👋',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            if (widget.selectedRole != null)
+                              OutlinedButton.icon(
+                                onPressed: isLoading
+                                    ? null
+                                    : () => context.go('/select-role'),
+                                icon: const Icon(Icons.swap_horiz, size: 20),
+                                label: const Text('Ganti Peran'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.primaryColor,
+                                  side: const BorderSide(
+                                    color: AppTheme.primaryColor,
+                                    width: 1.5,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
+                        if (widget.selectedRole != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  widget.selectedRole == AppConstants.roleSiswa
+                                      ? Icons.person
+                                      : widget.selectedRole ==
+                                            AppConstants.roleAdminStan
+                                      ? Icons.store
+                                      : Icons.admin_panel_settings,
+                                  size: 16,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Peran: ${widget.selectedRole == AppConstants.roleSiswa
+                                      ? "Siswa"
+                                      : widget.selectedRole == AppConstants.roleAdminStan
+                                      ? "Admin Stan"
+                                      : "Super Admin"}',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 16),
                         Text(
                           'Masukkan email dan password Anda untuk login',
                           style: Theme.of(context).textTheme.bodyMedium
@@ -206,7 +278,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           text: 'Login',
                           onPressed: _handleLogin,
                           isLoading: isLoading,
-                          icon: Icons.login,
                         ),
                         const SizedBox(height: 24),
                         Align(
@@ -258,6 +329,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Google Sign-In Button
                         PrimaryButton(
                           text: 'Masuk dengan Google',
+                          backgroundColor: AppTheme.backgroundColor,
+                          textColor: Colors.black87,
                           onPressed: () {
                             setState(() {
                               _isGoogleSignIn = true;
@@ -271,7 +344,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           },
                           isLoading: isLoading,
-                          icon: Icons.login,
+                          icon: Image.asset(
+                            'assets/icons/google-logo.png',
+                            height: 24,
+                            width: 24,
+                          ),
                         ),
                       ],
                     ),

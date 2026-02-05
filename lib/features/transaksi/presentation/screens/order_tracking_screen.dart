@@ -567,7 +567,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        const Text('Jl. Danau Ranau, Sawojajar, Kec. Kedungkandang, Kota Malang', style: TextStyle(fontSize: 12)),
+        const Text('Jl. Danau Ranau, Sawojajar, Kec. Kedungkandang, Kota Malang', style: TextStyle(fontSize: 12),textAlign: TextAlign.center,),
         const SizedBox(height: 4),
         const Text('Telp: 0812-2348-8999', style: TextStyle(fontSize: 12)),
         const SizedBox(height: 16),

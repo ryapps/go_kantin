@@ -6,20 +6,16 @@ class KantinStallCard extends StatelessWidget {
   final Stan stan;
   final VoidCallback? onTap;
 
-  const KantinStallCard({
-    super.key,
-    required this.stan,
-    this.onTap,
-  });
+  const KantinStallCard({super.key, required this.stan, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 15),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: SizedBox(
-          height: 250,
+          height: 128,
           child: Container(
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor,
@@ -32,168 +28,129 @@ class KantinStallCard extends StatelessWidget {
                 ),
               ],
             ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image with status badge
-              Expanded(
-                flex: 2,
-                child: Container(
-                  width: double.infinity,
+            child: Row(
+              children: [
+                // Image on the left
+                Container(
+                  width: 100,
+                  margin: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
                     color: AppTheme.backgroundColor,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Stack(
-                    children: [
-                      // Stall Image
-                      Center(
-                        child: stan.imageUrl.isNotEmpty
-                            ? Image.network(
-                                stan.imageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: AppTheme.backgroundColor,
-                                    child: const Icon(Icons.store, size: 50),
-                                  );
-                                },
-                              )
-                            : Container(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: stan.imageUrl.isNotEmpty
+                        ? Image.network(
+                            stan.imageUrl,
+                            fit: BoxFit.cover,
+                            width: 120,
+                            height: 120,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
                                 color: AppTheme.backgroundColor,
-                                child: const Icon(Icons.store, size: 50),
-                              ),
-                      ),
-                      // Status Badge
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                                child: const Icon(Icons.store, size: 40),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: AppTheme.backgroundColor,
+                            child: const Icon(Icons.store, size: 40),
                           ),
-                          decoration: BoxDecoration(
-                            color: stan.isActive
-                                ? AppTheme.successColor
-                                : Colors.red,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            stan.isActive ? 'Open' : 'Closed',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelSmall?.copyWith(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      // Favorite Button
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.favorite_border,
-                              color: AppTheme.textPrimary,
-                              size: 18,
-                            ),
-                            onPressed: () {},
-                            constraints: const BoxConstraints(
-                              maxHeight: 32,
-                              maxWidth: 32,
-                            ),
-                            padding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-              ),
-      
-              // Details
-              Expanded(
-                flex: 1,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Stall Name
-                      Text(
-                        stan.namaStan,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
+
+                // Details on the right
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Stall Name
+                        Text(
+                          stan.namaStan,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      // Owner Name
-                      Text(
-                        'by ${stan.namaPemilik}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontSize: 11,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      // Rating
-                      Flexible(
-                        child: Row(
+                        SizedBox(height: 8),
+                        // Owner Name
+                        Row(
                           children: [
                             const Icon(
-                              Icons.star_rounded,
-                              color: Colors.orange,
+                              Icons.person_outline,
                               size: 14,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${stan.rating}',
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(fontWeight: FontWeight.w500),
+                              color: AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                '(${stan.reviewCount} reviews)',
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 10,
-                                    ),
+                                stan.namaPemilik,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppTheme.textSecondary),
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        // Category
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.phone_outlined,
+                              size: 14,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                stan.telp,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppTheme.textSecondary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Status
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: stan.isActive
+                                ? AppTheme.successColor
+                                : Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            stan.isActive ? 'Buka' : 'Tutup',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ));
+    );
   }
 }

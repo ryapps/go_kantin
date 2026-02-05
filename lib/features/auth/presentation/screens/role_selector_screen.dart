@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kantin_app/core/theme/app_theme.dart';
 import 'package:kantin_app/core/utils/constants.dart';
 import 'package:kantin_app/core/widgets/primary_button.dart';
 
@@ -21,9 +22,10 @@ class _RoleSelectorScreenState extends State<RoleSelectorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pilih Peran Anda'),
+        title: const Text('Pilih Peran Anda',style: TextStyle(color: AppTheme.backgroundColor),),
         centerTitle: true,
         elevation: 0,
+        foregroundColor: AppTheme.backgroundColor,
       ),
       body: SafeArea(
         child: Padding(

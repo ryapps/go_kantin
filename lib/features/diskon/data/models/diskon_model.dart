@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
-import 'package:kantin_app/features/diskon/domain/entities/menu_diskon.dart';
+import 'package:kantin_app/features/diskon/domain/entities/diskon.dart';
 
 class DiskonModel extends Equatable {
   final String id;
+  final String stanId; // Diskon berlaku per kantin
   final String namaDiskon;
   final double persentaseDiskon; // 0-100
   final Timestamp tanggalAwal;
@@ -13,6 +14,7 @@ class DiskonModel extends Equatable {
 
   const DiskonModel({
     required this.id,
+    required this.stanId,
     required this.namaDiskon,
     required this.persentaseDiskon,
     required this.tanggalAwal,
@@ -38,6 +40,7 @@ class DiskonModel extends Equatable {
 
     return DiskonModel(
       id: snapshot.id,
+      stanId: data['stanId'] ?? '',
       namaDiskon: data['namaDiskon'] ?? '',
       persentaseDiskon: (data['persentaseDiskon'] ?? 0).toDouble(),
       tanggalAwal: parseTimestamp(data['tanggalAwal']),
@@ -49,6 +52,7 @@ class DiskonModel extends Equatable {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'stanId': stanId,
       'namaDiskon': namaDiskon,
       'persentaseDiskon': persentaseDiskon,
       'tanggalAwal': tanggalAwal,
@@ -61,6 +65,7 @@ class DiskonModel extends Equatable {
   factory DiskonModel.fromJson(Map<String, dynamic> json) {
     return DiskonModel(
       id: json['id'] ?? '',
+      stanId: json['stanId'] ?? '',
       namaDiskon: json['namaDiskon'] ?? '',
       persentaseDiskon: (json['persentaseDiskon'] ?? 0).toDouble(),
       tanggalAwal: json['tanggalAwal'] != null
@@ -79,6 +84,7 @@ class DiskonModel extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'stanId': stanId,
       'namaDiskon': namaDiskon,
       'persentaseDiskon': persentaseDiskon,
       'tanggalAwal': tanggalAwal.toDate().toIso8601String(),
@@ -91,6 +97,7 @@ class DiskonModel extends Equatable {
   factory DiskonModel.fromEntity(Diskon entity) {
     return DiskonModel(
       id: entity.id,
+      stanId: entity.stanId,
       namaDiskon: entity.namaDiskon,
       persentaseDiskon: entity.persentaseDiskon,
       tanggalAwal: Timestamp.fromDate(entity.tanggalAwal),
@@ -103,6 +110,7 @@ class DiskonModel extends Equatable {
   Diskon toEntity() {
     return Diskon(
       id: id,
+      stanId: stanId,
       namaDiskon: namaDiskon,
       persentaseDiskon: persentaseDiskon,
       tanggalAwal: tanggalAwal.toDate(),
@@ -114,6 +122,7 @@ class DiskonModel extends Equatable {
 
   DiskonModel copyWith({
     String? id,
+    String? stanId,
     String? namaDiskon,
     double? persentaseDiskon,
     Timestamp? tanggalAwal,
@@ -123,6 +132,7 @@ class DiskonModel extends Equatable {
   }) {
     return DiskonModel(
       id: id ?? this.id,
+      stanId: stanId ?? this.stanId,
       namaDiskon: namaDiskon ?? this.namaDiskon,
       persentaseDiskon: persentaseDiskon ?? this.persentaseDiskon,
       tanggalAwal: tanggalAwal ?? this.tanggalAwal,
@@ -147,6 +157,7 @@ class DiskonModel extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    stanId,
     namaDiskon,
     persentaseDiskon,
     tanggalAwal,

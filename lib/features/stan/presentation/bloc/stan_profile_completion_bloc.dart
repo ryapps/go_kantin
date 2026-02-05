@@ -1,14 +1,20 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kantin_app/core/services/cloudinary_service.dart';
 import 'package:kantin_app/features/stan/domain/repositories/i_stan_repository.dart';
+
 import 'stan_profile_completion_event.dart';
 import 'stan_profile_completion_state.dart';
 
-class StanProfileCompletionBloc extends Bloc<StanProfileCompletionEvent, StanProfileCompletionState> {
+class StanProfileCompletionBloc
+    extends Bloc<StanProfileCompletionEvent, StanProfileCompletionState> {
   final IStanRepository _stanRepository;
 
-  StanProfileCompletionBloc(this._stanRepository) : super(const StanProfileCompletionInitial()) {
+  StanProfileCompletionBloc(this._stanRepository)
+    : super(const StanProfileCompletionInitial()) {
     on<SaveStanProfileRequested>(_onSaveStanProfileRequested);
     on<CheckStanProfileRequested>(_onCheckStanProfileRequested);
   }
@@ -26,11 +32,30 @@ class StanProfileCompletionBloc extends Bloc<StanProfileCompletionEvent, StanPro
 
       // Prepare the stan data
       String imageUrl = '';
-      if (event.profileData.containsKey('imagePath') && event.profileData['imagePath'] != null) {
+      if (event.profileData.containsKey('imagePath') &&
+          event.profileData['imagePath'] != null) {
         // Upload image to Cloudinary
-        final imagePath = event.profileData['imagePath'];
+        final imagePath = event.profileData['imagePath'] as String;
         if (imagePath.isNotEmpty) {
-          imageUrl = await CloudinaryService.uploadImage(File(imagePath));
+          if (kIsWeb) {
+            // For web, use XFile to read bytes
+            final xFile = XFile(imagePath);
+            final bytes = await xFile.readAsBytes();
+
+            // Extract filename from path
+            String filename = imagePath.split('/').last;
+            if (!filename.contains('.')) {
+              filename = '$filename.jpg';
+            }
+
+            imageUrl = await CloudinaryService.uploadImageFromBytes(
+              bytes,
+              filename,
+            );
+          } else {
+            // For mobile, use File path
+            imageUrl = await CloudinaryService.uploadImage(File(imagePath));
+          }
         }
       }
 
@@ -72,7 +97,11 @@ class StanProfileCompletionBloc extends Bloc<StanProfileCompletionEvent, StanPro
       final userId = event.userId;
 
       if (userId.isEmpty) {
-        emit(const StanProfileCompletionError('User ID is required to check stan profile'));
+        emit(
+          const StanProfileCompletionError(
+            'User ID is required to check stan profile',
+          ),
+        );
         return;
       }
 

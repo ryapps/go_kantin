@@ -59,7 +59,7 @@ class MenuDiskonModel extends Equatable {
     return MenuDiskon(
       id: id,
       menuId: menuId,
-      diskonId: diskonId,
+      diskonId: diskonId, createdAt: DateTime.now(),
     );
   }
 

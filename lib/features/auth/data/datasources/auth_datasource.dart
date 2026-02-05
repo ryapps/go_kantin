@@ -116,6 +116,21 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
           .doc(user.uid)
           .set(userModel.toFirestore());
 
+      // Create siswa document if role is siswa
+      if (role == AppConstants.roleSiswa) {
+        final today = DateTime.now().toIso8601String().split('T')[0];
+        final siswaDoc = _firestore.collection('siswa').doc();
+        await siswaDoc.set({
+          'userId': user.uid,
+          'namaSiswa': username,
+          'alamat': '',
+          'telp': '',
+          'foto': '',
+          'dailyOrderCount': 0,
+          'lastOrderDate': today,
+        });
+      }
+
       return userModel;
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseAuthError(e.code));
@@ -181,6 +196,22 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
       );
 
       await userRef.set(newUser.toFirestore());
+
+      // Create siswa document if role is siswa
+      if (role == AppConstants.roleSiswa) {
+        final today = DateTime.now().toIso8601String().split('T')[0];
+        final siswaDoc = _firestore.collection('siswa').doc();
+        await siswaDoc.set({
+          'userId': firebaseUser.uid,
+          'namaSiswa': firebaseUser.displayName ?? firebaseUser.email ?? 'User',
+          'alamat': '',
+          'telp': '',
+          'foto': firebaseUser.photoURL ?? '',
+          'dailyOrderCount': 0,
+          'lastOrderDate': today,
+        });
+      }
+
       return newUser;
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw AuthException(_mapFirebaseAuthError(e.code));
@@ -285,6 +316,8 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
         return ErrorMessages.userNotFound;
       case 'wrong-password':
         return ErrorMessages.wrongPassword;
+      case 'invalid-credential':
+        return 'Email atau password tidak sesuai';
       case 'email-already-in-use':
         return ErrorMessages.emailAlreadyInUse;
       case 'invalid-email':

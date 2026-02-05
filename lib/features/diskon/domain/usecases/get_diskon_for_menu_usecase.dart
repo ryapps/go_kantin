@@ -1,10 +1,11 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
+import 'package:kantin_app/features/diskon/domain/entities/diskon.dart';
+import 'package:kantin_app/features/diskon/domain/repositories/i_diskon_repository_new.dart';
 
 import '../../../../core/error/failures.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../entities/menu_diskon.dart';
-import '../repositories/i_diskon_repository.dart';
 
 /// Use case for fetching a discount for a menu
 class GetDiskonForMenuUseCase implements UseCase<Diskon?, MenuDiscountParams> {

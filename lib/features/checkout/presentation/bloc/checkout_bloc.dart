@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kantin_app/features/cart/data/services/cart_service.dart';
 import 'package:kantin_app/features/cart/domain/entities/cart_item.dart';
-import 'package:kantin_app/features/diskon/domain/entities/menu_diskon.dart';
-import 'package:kantin_app/features/diskon/domain/usecases/get_diskon_for_menu_usecase.dart';
+import 'package:kantin_app/features/diskon/domain/entities/diskon.dart';
+import 'package:kantin_app/features/diskon/domain/usecases/get_diskons_by_stan_usecase.dart';
 import 'package:kantin_app/features/transaksi/domain/entities/transaksi.dart';
 import 'package:kantin_app/features/transaksi/domain/repositories/i_transaksi_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -14,14 +14,14 @@ part 'checkout_state.dart';
 
 class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   final CartService cartService;
-  final GetDiskonForMenuUseCase getDiskonForMenuUseCase;
+  final GetDiskonsByStanUseCase getDiskonsByStanUseCase;
   final ITransaksiRepository transaksiRepository;
   final firebase_auth.FirebaseAuth firebaseAuth;
   final Uuid _uuid = const Uuid();
 
   CheckoutBloc({
     required this.cartService,
-    required this.getDiskonForMenuUseCase,
+    required this.getDiskonsByStanUseCase,
     required this.transaksiRepository,
     required this.firebaseAuth,
   }) : super(const CheckoutInitial()) {
@@ -58,14 +58,16 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         return;
       }
 
-      final perMenuDiscounts = await _getBestDiscountsPerMenu(items);
-      final enabledMenuDiscounts = <String>{};
+      // Get active discounts for the stan
+      final stanId = items.isNotEmpty ? items.first.stanId : '';
+      final stanDiscounts = await _getActiveDiskonsByStan(stanId);
+      final enabledDiscounts = <String>{};
 
       final calculation = _recalculateTotals(
         items: items,
         subtotal: subtotal,
-        perMenuDiscounts: perMenuDiscounts,
-        enabledMenuDiscounts: enabledMenuDiscounts,
+        stanDiscounts: stanDiscounts,
+        enabledDiscounts: enabledDiscounts,
       );
       final stanName = items.isNotEmpty ? items.first.stanName : '';
 
@@ -77,8 +79,10 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
           finalTotal: calculation.finalTotal,
           stanName: stanName,
           itemDiscounts: calculation.itemDiscounts,
-          menuDiscounts: perMenuDiscounts,
-          enabledMenuDiscounts: enabledMenuDiscounts,
+          menuDiscounts: stanDiscounts.isEmpty
+              ? {}
+              : {stanId: stanDiscounts.first},
+          enabledMenuDiscounts: enabledDiscounts,
         ),
       );
     } catch (e) {
@@ -109,15 +113,15 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       }
 
       final currentState = state as CheckoutLoaded;
-      final perMenuDiscounts = await _getBestDiscountsPerMenu(items);
-      final enabledMenuDiscounts = currentState.enabledMenuDiscounts
-          .where(perMenuDiscounts.containsKey)
-          .toSet();
+      final stanId = items.isNotEmpty ? items.first.stanId : '';
+      final stanDiscounts = await _getActiveDiskonsByStan(stanId);
+      final enabledDiscounts = currentState.enabledMenuDiscounts;
+
       final calculation = _recalculateTotals(
         items: items,
         subtotal: subtotal,
-        perMenuDiscounts: perMenuDiscounts,
-        enabledMenuDiscounts: enabledMenuDiscounts,
+        stanDiscounts: stanDiscounts,
+        enabledDiscounts: enabledDiscounts,
       );
       final stanName = items.isNotEmpty ? items.first.stanName : '';
 
@@ -129,8 +133,10 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
           finalTotal: calculation.finalTotal,
           stanName: stanName,
           itemDiscounts: calculation.itemDiscounts,
-          menuDiscounts: perMenuDiscounts,
-          enabledMenuDiscounts: enabledMenuDiscounts,
+          menuDiscounts: stanDiscounts.isEmpty
+              ? {}
+              : {stanId: stanDiscounts.first},
+          enabledMenuDiscounts: enabledDiscounts,
         ),
       );
     } catch (e) {
@@ -174,11 +180,16 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       updatedEnabled.remove(event.menuId);
     }
 
+    final stanId = currentState.cartItems.isNotEmpty
+        ? currentState.cartItems.first.stanId
+        : '';
+    final stanDiscounts = await _getActiveDiskonsByStan(stanId);
+
     final calculation = _recalculateTotals(
       items: currentState.cartItems,
       subtotal: currentState.subtotal,
-      perMenuDiscounts: currentState.menuDiscounts,
-      enabledMenuDiscounts: updatedEnabled,
+      stanDiscounts: stanDiscounts,
+      enabledDiscounts: updatedEnabled,
     );
 
     emit(
@@ -265,20 +276,30 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   _CheckoutDiscountCalculation _recalculateTotals({
     required List<CartItem> items,
     required double subtotal,
-    required Map<String, Diskon> perMenuDiscounts,
-    required Set<String> enabledMenuDiscounts,
+    required List<Diskon> stanDiscounts,
+    required Set<String> enabledDiscounts,
   }) {
     final itemDiscounts = <String, double>{};
     double totalDiscount = 0.0;
 
-    for (final item in items) {
-      final discount = perMenuDiscounts[item.menuId];
-      final discountAmount =
-          discount == null || !enabledMenuDiscounts.contains(item.menuId)
-          ? 0.0
-          : (item.harga * item.quantity * discount.persentaseDiskon) / 100;
-      itemDiscounts[item.menuId] = discountAmount;
-      totalDiscount += discountAmount;
+    // Get the active discount for the stan (if enabled and exists)
+    final activeDiscount =
+        stanDiscounts.isNotEmpty &&
+            enabledDiscounts.contains(
+              items.isNotEmpty ? items.first.stanId : '',
+            )
+        ? stanDiscounts.first
+        : null;
+
+    if (activeDiscount != null) {
+      // Apply stan discount to all items
+      for (final item in items) {
+        final discountAmount =
+            (item.harga * item.quantity * activeDiscount.persentaseDiskon) /
+            100;
+        itemDiscounts[item.menuId] = discountAmount;
+        totalDiscount += discountAmount;
+      }
     }
 
     return _CheckoutDiscountCalculation(
@@ -288,26 +309,17 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     );
   }
 
-  Future<Map<String, Diskon>> _getBestDiscountsPerMenu(
-    List<CartItem> items,
-  ) async {
-    final resultMap = <String, Diskon>{};
-    final processedMenuIds = <String>{};
+  Future<List<Diskon>> _getActiveDiskonsByStan(String stanId) async {
+    if (stanId.isEmpty) return [];
 
-    for (final item in items) {
-      if (processedMenuIds.contains(item.menuId)) continue;
-      processedMenuIds.add(item.menuId);
+    final result = await getDiskonsByStanUseCase(
+      GetDiskonsByStanParams(stanId: stanId, activeOnly: true),
+    );
 
-      final result = await getDiskonForMenuUseCase(
-        MenuDiscountParams(menuId: item.menuId),
-      );
-
-      final discount = result.fold((_) => null, (diskon) => diskon);
-      if (discount == null || !discount.isValid) continue;
-      resultMap[item.menuId] = discount;
-    }
-
-    return resultMap;
+    return result.fold(
+      (_) => [],
+      (diskons) => diskons.where((d) => d.isValid).toList(),
+    );
   }
 
   List<DetailTransaksi> _buildDetailItems({

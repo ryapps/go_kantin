@@ -33,12 +33,10 @@ class CanteenDetailBloc extends Bloc<CanteenDetailEvent, CanteenDetailState> {
     try {
       _stanId = event.stanId;
 
-      // Initialize CartService if not already initialized
       if (!cartService.isInitialized) {
         await cartService.init();
       }
 
-      // Get menu items
       final menuResult = await getMenuByStanIdUseCase(
         MenuByStanParams(stanId: _stanId),
       );
@@ -54,7 +52,6 @@ class CanteenDetailBloc extends Bloc<CanteenDetailEvent, CanteenDetailState> {
           .where((item) => item.jenis == AppConstants.jenisMinuman)
           .toList();
 
-      // Initialize stan name from menu items to avoid late init errors
       if (foodItems.isNotEmpty) {
         _stanName = foodItems.first.stanName;
       } else if (beverageItems.isNotEmpty) {
@@ -63,12 +60,6 @@ class CanteenDetailBloc extends Bloc<CanteenDetailEvent, CanteenDetailState> {
         _stanName = '';
       }
 
-      if (foodItems.isEmpty && beverageItems.isEmpty) {
-        emit(const CanteenDetailEmpty());
-        return;
-      }
-
-      // Sync cart from Hive
       final cartItems = await cartService.getCartItems();
       final Map<String, int> quantities = {};
 
